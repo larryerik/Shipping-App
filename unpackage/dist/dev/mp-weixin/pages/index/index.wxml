@@ -1,0 +1,1 @@
+<view class="page"><view class="header"><text class="header-title">发货作业台</text></view><view class="card-list"><view wx:for="{{a}}" wx:for-item="item" wx:key="c" class="menu-card" bindtap="{{item.d}}"><text class="menu-title">{{item.a}}</text><text class="menu-desc">{{item.b}}</text></view></view></view>
