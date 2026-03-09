@@ -145,5 +145,151 @@ module.exports = {
 			console.error('库存操作失败:', error)
 			throw error
 		}
-	}
+	},
+	toWarehouse: async function(boxNoList) {
+	
+			// 1. 获取并去重所有要处理的boxid
+			const boxIdList = [...new Set(Array.isArray(boxNoList) ? boxNoList : [])];
+			if (boxIdList.length === 0) {
+				return {
+					code: 0,
+					message: '无有效boxid',
+					updated: 0
+				};
+			}
+	
+			const db = uniCloud.databaseForJQL({
+				clientInfo: this.getClientInfo()
+			});
+			const dbCmd = db.command;
+	
+			// 2. 定义每批处理的大小（关键参数）
+			const BATCH_SIZE = 200; // 可根据实际情况调整，建议 200-1000
+			let totalUpdated = 0;
+			const errors = [];
+	
+			// 3. 将超长ID列表拆分成多个批次
+			for (let i = 0; i < boxIdList.length; i += BATCH_SIZE) {
+				const currentBatch = boxIdList.slice(i, i + BATCH_SIZE);
+	
+				try {
+					console.log(`正在处理第 ${Math.floor(i/BATCH_SIZE) + 1} 批，共 ${currentBatch.length} 个ID`);
+	
+					// 4. 批量更新当前这批数据
+					const updateResult = await db.collection('inventory')
+						.where({
+							boxid: dbCmd.in(currentBatch) // 每批只传入200个ID
+						})
+						.update({
+							state: 1
+	
+						});
+	
+					totalUpdated += updateResult.updated || 0;
+	
+					// 5. 可选：每批处理完稍作停顿，减轻数据库压力
+					if (i + BATCH_SIZE < boxIdList.length) {
+						await new Promise(resolve => setTimeout(resolve, 100));
+					}
+	
+				} catch (err) {
+					console.error(`第 ${Math.floor(i/BATCH_SIZE) + 1} 批处理失败:`, err);
+					errors.push({
+						batchIndex: Math.floor(i / BATCH_SIZE) + 1,
+						error: err.message
+					});
+					// 根据需求决定：是继续下一批，还是终止整个操作
+					// 这里选择继续，记录错误后继续处理下一批
+				}
+			}
+	
+			// 6. 返回汇总结果
+			const result = {
+				code: errors.length === 0 ? 0 : 207, // 207 表示部分成功
+				message: `处理完成。成功更新 ${totalUpdated} 条记录。`,
+				updated: totalUpdated,
+				totalBatches: Math.ceil(boxIdList.length / BATCH_SIZE)
+			};
+	
+			if (errors.length > 0) {
+				result.errors = errors;
+				result.errorCount = errors.length;
+			}
+	
+			return result;
+	
+		},
+	outWarehouse: async function(boxNoList) {
+	
+			// 1. 获取并去重所有要处理的boxid
+			const boxIdList = [...new Set(Array.isArray(boxNoList) ? boxNoList : [])];
+			if (boxIdList.length === 0) {
+				return {
+					code: 0,
+					message: '无有效boxid',
+					updated: 0
+				};
+			}
+	
+			const db = uniCloud.databaseForJQL({
+				clientInfo: this.getClientInfo()
+			});
+			const dbCmd = db.command;
+	
+			// 2. 定义每批处理的大小（关键参数）
+			const BATCH_SIZE = 200; // 可根据实际情况调整，建议 200-1000
+			let totalUpdated = 0;
+			const errors = [];
+	
+			// 3. 将超长ID列表拆分成多个批次
+			for (let i = 0; i < boxIdList.length; i += BATCH_SIZE) {
+				const currentBatch = boxIdList.slice(i, i + BATCH_SIZE);
+	
+				try {
+					console.log(`正在处理第 ${Math.floor(i/BATCH_SIZE) + 1} 批，共 ${currentBatch.length} 个ID`);
+	
+					// 4. 批量更新当前这批数据
+					const updateResult = await db.collection('inventory')
+						.where({
+							boxid: dbCmd.in(currentBatch) // 每批只传入200个ID
+						})
+						.update({
+							state: 0
+	
+						});
+	
+					totalUpdated += updateResult.updated || 0;
+	
+					// 5. 可选：每批处理完稍作停顿，减轻数据库压力
+					if (i + BATCH_SIZE < boxIdList.length) {
+						await new Promise(resolve => setTimeout(resolve, 100));
+					}
+	
+				} catch (err) {
+					console.error(`第 ${Math.floor(i/BATCH_SIZE) + 1} 批处理失败:`, err);
+					errors.push({
+						batchIndex: Math.floor(i / BATCH_SIZE) + 1,
+						error: err.message
+					});
+					// 根据需求决定：是继续下一批，还是终止整个操作
+					// 这里选择继续，记录错误后继续处理下一批
+				}
+			}
+	
+			// 6. 返回汇总结果
+			const result = {
+				code: errors.length === 0 ? 0 : 207, // 207 表示部分成功
+				message: `处理完成。成功更新 ${totalUpdated} 条记录。`,
+				updated: totalUpdated,
+				totalBatches: Math.ceil(boxIdList.length / BATCH_SIZE)
+			};
+	
+			if (errors.length > 0) {
+				result.errors = errors;
+				result.errorCount = errors.length;
+			}
+	
+			return result;
+	
+		},
 }

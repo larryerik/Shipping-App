@@ -102,6 +102,7 @@
 					details: Array.isArray(item.details)
 						? item.details.map(line => ({
 							sku: String(line.sku || ''),
+							fnsku: String(line.fnsku || ''),
 							qty: Number(line.qty || 0)
 						})).filter(line => line.sku)
 						: []
@@ -127,7 +128,147 @@
 			normalizeSkuItem(raw = {}) {
 				return {
 					sku: String(raw.sku || raw.fnsku || ''),
+					fnsku: String(raw.fnsku || ''),
 					qty: Number(raw.number || 0)
+				}
+			},
+			toPound(weight) {
+				return (Number(weight || 0) * 2.20462).toFixed(2)
+			},
+			escapeCsvCell(value) {
+				const str = String(value == null ? '' : value)
+				if (/[",\r\n]/.test(str)) {
+					return `"${str.replace(/"/g, '""')}"`
+				}
+				return str
+			},
+			buildCsvContent() {
+				const rows = [['序号', 'sku', 'fnsku', '数量', '重量', '磅重', '箱号']]
+				this.boxes.forEach((box, boxIndex) => {
+					const details = Array.isArray(box.details) && box.details.length
+						? box.details
+						: [{ sku: '', fnsku: '', qty: '' }]
+					const weight = Number(box.weight || 0)
+					const pound = this.toPound(weight)
+					details.forEach((line, lineIndex) => {
+						rows.push([
+							boxIndex + 1,
+							line.sku === line.fnsku ? "" : line.sku,
+							line.fnsku || '',
+							line.qty == null ? '' : line.qty,
+							lineIndex === 0 ? weight : '',
+							lineIndex === 0 ? pound : '',
+							lineIndex === 0 ? (box.boxNo || '') : ''
+						])
+					})
+				})
+				return rows
+					.map(row => row.map(cell => this.escapeCsvCell(cell)).join(','))
+					.join('\r\n')
+			},
+			getTodayString() {
+				const now = new Date()
+				const y = now.getFullYear()
+				const m = String(now.getMonth() + 1).padStart(2, '0')
+				const d = String(now.getDate()).padStart(2, '0')
+				return `${y}-${m}-${d}`
+			},
+			sanitizeFileName(name) {
+				const trimmed = String(name || '').trim()
+				const noExt = trimmed.replace(/\.csv$/i, '')
+				return noExt.replace(/[\\/:*?"<>|]/g, '_').trim()
+			},
+			promptExportFileName() {
+				return new Promise((resolve, reject) => {
+					uni.showModal({
+						title: '导出文件名',
+						editable: true,
+						placeholderText: `默认：${this.getTodayString()}`,
+						success: res => {
+							if (!res.confirm) {
+								reject(new Error('cancel'))
+								return
+							}
+							const inputName = this.sanitizeFileName(res.content || '')
+							resolve(inputName || this.getTodayString())
+						},
+						fail: reject
+					})
+				})
+			},
+			async exportCsv(baseName) {
+				if (!this.boxes.length) {
+					uni.showToast({ title: '暂无可导出数据', icon: 'none' })
+					return false
+				}
+				try {
+					const finalBaseName = this.sanitizeFileName(baseName || '')
+					const safeBaseName = finalBaseName || this.getTodayString()
+					const fileName = `${safeBaseName}.csv`
+					const csv = '\uFEFF' + this.buildCsvContent()
+					if (typeof uni.getFileSystemManager === 'function' && uni.env && uni.env.USER_DATA_PATH) {
+						const filePath = `${uni.env.USER_DATA_PATH}/${fileName}`
+						await new Promise((resolve, reject) => {
+							uni.getFileSystemManager().writeFile({
+								filePath,
+								data: csv,
+								encoding: 'utf8',
+								success: resolve,
+								fail: reject
+							})
+						})
+						uni.showToast({ title: '导出成功', icon: 'success' })
+						return true
+					}
+					await new Promise((resolve, reject) => {
+						uni.setClipboardData({
+							data: csv,
+							success: resolve,
+							fail: reject
+						})
+					})
+					uni.showToast({ title: '已复制CSV到剪贴板', icon: 'none' })
+					return true
+				} catch (error) {
+					if (String(error && error.message) === 'cancel') {
+						return false
+					}
+					uni.showToast({ title: '导出失败', icon: 'none' })
+					return false
+				}
+			},
+			getValidBoxNoList() {
+				const list = this.boxes
+					.map(item => String(item.boxNo || '').trim())
+					.filter(Boolean)
+				return [...new Set(list)]
+			},
+			async changeWarehouseState(action) {
+				const boxNoList = this.getValidBoxNoList()
+				if (!boxNoList.length) {
+					uni.showToast({ title: '没有可操作的箱号', icon: 'none' })
+					return false
+				}
+				const cloudApi = this.getCloudAPI()
+				const isOut = action === 'out'
+				try {
+					uni.showLoading({ title: isOut ? '出库中...' : '入库中...', mask: true })
+					const res = isOut
+						? await cloudApi.outWarehouse(boxNoList)
+						: await cloudApi.toWarehouse(boxNoList)
+					uni.hideLoading()
+					if (res && (res.code === 0 || res.code === 207)) {
+						const successText = isOut ? '出库完成' : '入库完成'
+						const updated = Number(res.updated || 0)
+						uni.showToast({ title: `${successText}(${updated})`, icon: 'none' })
+						return true
+					}
+					uni.showToast({ title: (res && res.message) || '操作失败', icon: 'none' })
+					return false
+				} catch (error) {
+					uni.hideLoading()
+					uni.showToast({ title: isOut ? '出库失败' : '入库失败', icon: 'none' })
+					return false
 				}
 			},
 			makeBoxRecord({ boxNo = '', weight = 0, skuList = [] }) {
@@ -216,9 +357,34 @@
 			operateOptions() {
 				uni.showActionSheet({
 					itemList: ['导出并出库', '导出', '出库', '入库'],
-					success: res => {
-						const labels = ['导出并出库', '导出', '出库', '入库']
-						uni.showToast({ title: labels[res.tapIndex], icon: 'none' })
+					success: async res => {
+						if (res.tapIndex === 0) {
+							let fileName = ''
+							try {
+								fileName = await this.promptExportFileName()
+							} catch (error) {
+								return
+							}
+							await this.changeWarehouseState('out')
+							await this.exportCsv(fileName)
+							return
+						}
+						if (res.tapIndex === 1) {
+							try {
+								const fileName = await this.promptExportFileName()
+								await this.exportCsv(fileName)
+							} catch (error) {
+								return
+							}
+							return
+						}
+						if (res.tapIndex === 2) {
+							await this.changeWarehouseState('out')
+							return
+						}
+						if (res.tapIndex === 3) {
+							await this.changeWarehouseState('in')
+						}
 					}
 				})
 			}
