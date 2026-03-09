@@ -1,0 +1,1 @@
+{"bsonType":"object","required":["sku","fnsku"],"permission":{"read":true,"create":true,"update":true,"delete":true},"properties":{"_id":{},"sku":{},"fnsku":{},"same":{}}}

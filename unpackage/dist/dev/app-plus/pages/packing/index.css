@@ -1,0 +1,340 @@
+/**
+ * 这里是uni-app内置的常用样式变量
+ *
+ * uni-app 官方扩展插件及插件市场（https://ext.dcloud.net.cn）上很多三方插件均使用了这些样式变量
+ * 如果你是插件开发者，建议你使用scss预处理，并在插件代码中直接使用这些变量（无需 import 这个文件），方便用户通过搭积木的方式开发整体风格一致的App
+ *
+ */
+/**
+ * 如果你是App开发者（插件使用者），你可以通过修改这些变量来定制自己的插件主题，实现自定义主题功能
+ *
+ * 如果你的项目同样使用了scss预处理，你也可以直接在你的 scss 代码中使用如下变量，同时无需 import 这个文件
+ */
+/* 颜色变量 */
+/* 行为相关颜色 */
+/* 文字基本颜色 */
+/* 背景颜色 */
+/* 边框颜色 */
+/* 尺寸变量 */
+/* 文字尺寸 */
+/* 图片尺寸 */
+/* Border Radius */
+/* 水平间距 */
+/* 垂直间距 */
+/* 透明度 */
+/* 文章场景相关 */
+.uni-swipe[data-v-8ff2a577] {
+  position: relative;
+  overflow: hidden;
+}
+.uni-swipe_box[data-v-8ff2a577] {
+  display: flex;
+  flex-shrink: 0;
+  position: relative;
+}
+.uni-swipe_text--center[data-v-8ff2a577] {
+  width: 100%;
+  cursor: grab;
+}
+.uni-swipe_button-group[data-v-8ff2a577] {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.button-group--left[data-v-8ff2a577] {
+  left: 0;
+  transform: translateX(-100%);
+}
+.button-group--right[data-v-8ff2a577] {
+  right: 0;
+  transform: translateX(100%);
+}
+.uni-swipe_button[data-v-8ff2a577] {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0 20px;
+}
+.uni-swipe_button-text[data-v-8ff2a577] {
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.ani[data-v-8ff2a577] {
+  transition-property: transform;
+  transition-duration: 0.3s;
+  transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.page {
+		height: 100vh;
+		padding: 0.75rem;
+		padding-top: calc(var(--status-bar-height) + 0.375rem);
+		padding-bottom: 0.75rem;
+		background: #f3f6fb;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+}
+.top-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
+		flex-shrink: 0;
+}
+.back-btn,
+	.connect-btn {
+		width: 3.75rem;
+		text-align: center;
+}
+.back-btn {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		color: #1f2d4d;
+		font-size: 0.9375rem;
+		padding-left: 0.1875rem;
+		height: 2rem;
+		line-height: 2rem;
+}
+.back-arrow {
+		font-size: 1.5625rem;
+		line-height: 1;
+		margin-right: 0.0625rem;
+		font-weight: 400;
+}
+.bt-status {
+		flex: 1;
+		margin: 0 0.5rem;
+		text-align: center;
+		background: #e8eef8;
+		color: #50607a;
+		padding: 0.375rem;
+		border-radius: 31.21875rem;
+		font-size: 0.75rem;
+}
+.bt-status.connected {
+		background: #e6f6ff;
+		color: #0d70c7;
+}
+.connect-btn {
+		background: #2f7ce0;
+		color: #fff;
+		padding: 0.375rem 0;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+}
+.summary {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 0.75rem;
+		color: #51617d;
+		background: #fff;
+		padding: 0.5rem;
+		border-radius: 0.4375rem;
+		margin-bottom: 0.375rem;
+		flex-shrink: 0;
+}
+.sort-btn {
+		padding: 0.25rem 0.5rem;
+		border-radius: 31.21875rem;
+		background: #eaf1ff;
+		color: #2b5fad;
+		font-size: 0.6875rem;
+}
+.list-wrap {
+		flex: 1;
+		min-height: 0;
+		padding-bottom: 0.25rem;
+		box-sizing: border-box;
+}
+.swipe-row {
+		border-radius: 0.5rem;
+		margin-bottom: 0.375rem;
+		box-sizing: border-box;
+}
+.swipe-main {
+		background: #fff;
+		padding: 0.625rem 0.5625rem;
+		display: grid;
+		grid-template-columns: 1fr auto;
+		column-gap: 0.5rem;
+		align-items: center;
+		width: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
+}
+.swipe-main.highlight {
+		background: #fff6da;
+		box-shadow: 0 0 0 0.0625rem #f7c948 inset;
+}
+.left {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-width: 0;
+		padding-right: 0.5rem;
+}
+.sku {
+		font-size: 0.875rem;
+		color: #1f2d4d;
+		font-weight: 700;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+}
+.barcode {
+		font-size: 0.6875rem;
+		color: #7887a1;
+		margin-top: 0.1875rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+}
+.qty {
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: #1f4ea1;
+		flex-shrink: 0;
+		min-width: 2.25rem;
+		text-align: right;
+		white-space: nowrap;
+}
+.bottom-panel {
+		background: #fff;
+		border-radius: 0.5625rem;
+		padding: 0.5625rem;
+		margin-top: 0.375rem;
+		flex-shrink: 0;
+		padding-bottom: calc(0.5625rem + env(safe-area-inset-bottom));
+		box-sizing: border-box;
+}
+.field-row {
+		display: flex;
+		gap: 0.375rem;
+		margin-bottom: 0.5rem;
+		min-width: 0;
+}
+.input {
+		flex: 1;
+		min-width: 0;
+		height: 2.375rem;
+		border: 1px solid #d9e1ef;
+		border-radius: 0.375rem;
+		padding: 0 0.625rem;
+		background: #fdfdff;
+		box-sizing: border-box;
+}
+.action-row {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 0.3125rem;
+}
+.btn {
+		text-align: center;
+		height: 2.25rem;
+		line-height: 2.25rem;
+		border-radius: 0.375rem;
+		background: #edf1f8;
+		color: #33415f;
+		font-size: 0.75rem;
+}
+.btn.primary {
+		background: #2f7ce0;
+		color: #fff;
+}
+.btn.accent {
+		background: #16a085;
+		color: #fff;
+}
+.mask {
+		position: fixed;
+		left: 0;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.35);
+		z-index: 20;
+}
+.drawer {
+		position: fixed;
+		right: 0;
+		top: calc(var(--status-bar-height) + 0.75rem);
+		bottom: 0.75rem;
+		width: 17.5rem;
+		background: #fff;
+		z-index: 30;
+		padding: 0.8125rem;
+		box-sizing: border-box;
+		border-radius: 0.625rem 0 0 0.625rem;
+		transform: translateX(100%);
+		transition: transform 0.2s;
+}
+.drawer.show {
+		transform: translateX(0);
+}
+.drawer-title {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		color: #1c2e52;
+		margin-bottom: 0.625rem;
+}
+.device-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.5625rem;
+		border-radius: 0.375rem;
+		margin-bottom: 0.3125rem;
+		background: #f4f8ff;
+		font-size: 0.75rem;
+}
+.device-rssi {
+		color: #7a889f;
+}
+.qty-popup {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 17.5rem;
+		background: #fff;
+		border-radius: 0.5625rem;
+		padding: 0.75rem;
+		z-index: 40;
+}
+.popup-title {
+		font-size: 0.9375rem;
+		font-weight: 700;
+		color: #1c2e52;
+		margin-bottom: 0.5rem;
+}
+.popup-input {
+		height: 2.4375rem;
+		border: 1px solid #d8e0ef;
+		border-radius: 0.375rem;
+		padding: 0 0.5rem;
+		margin-bottom: 0.5rem;
+}
+.popup-actions {
+		display: flex;
+		gap: 0.375rem;
+}
+.popup-btn {
+		flex: 1;
+		height: 2.25rem;
+		line-height: 2.25rem;
+		text-align: center;
+		background: #eef2f8;
+		border-radius: 0.375rem;
+		color: #33415f;
+}
+.popup-btn.ok {
+		background: #2f7ce0;
+		color: #fff;
+}
