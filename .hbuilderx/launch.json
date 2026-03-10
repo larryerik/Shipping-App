@@ -12,7 +12,7 @@
             "default" : {
                 "launchtype" : "local"
             },
-            "h5" : {
+            "mp-weixin" : {
                 "launchtype" : "local"
             },
             "provider" : "aliyun",

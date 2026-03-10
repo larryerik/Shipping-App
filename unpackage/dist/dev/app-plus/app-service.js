@@ -103,7 +103,7 @@ if (uni.restoreGlobal) {
       ])
     ]);
   }
-  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", _sfc_render$5], ["__file", "/Users/mm/Documents/HBuilderProjects/发货app/pages/index/index.vue"]]);
+  const PagesIndexIndex = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["render", _sfc_render$5], ["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/pages/index/index.vue"]]);
   function formatAppLog(type, filename, ...args) {
     if (uni.__log__) {
       uni.__log__(type, filename, ...args);
@@ -481,7 +481,7 @@ if (uni.restoreGlobal) {
   function T(e2) {
     return e2 && "string" == typeof e2 ? JSON.parse(e2) : e2;
   }
-  const b = true, E = "app", A = T(define_process_env_UNI_SECURE_NETWORK_CONFIG_default), P = E, C = T('{"address":["127.0.0.1","192.168.2.231","198.18.0.1"],"servePort":7001,"debugPort":9001,"initialLaunchType":"local","skipFiles":["<node_internals>/**","/Applications/HBuilderX.app/Contents/HBuilderX/plugins/unicloud/**/*.js"]}'), O = T('[{"provider":"aliyun","spaceName":"fba","spaceId":"mp-23014221-08b9-4a62-9e23-0db420540ce3","clientSecret":"XqIYcVm7VKcgUYiKyqBISA==","endpoint":"https://api.next.bspapp.com"}]') || [];
+  const b = true, E = "app", A = T(define_process_env_UNI_SECURE_NETWORK_CONFIG_default), P = E, C = T('{"address":["127.0.0.1","192.168.10.100","198.18.0.1"],"servePort":7001,"debugPort":9000,"initialLaunchType":"local","skipFiles":["<node_internals>/**","/Applications/HBuilderX.app/Contents/HBuilderX/plugins/unicloud/**/*.js"]}'), O = T('[{"provider":"aliyun","spaceName":"fba","spaceId":"mp-23014221-08b9-4a62-9e23-0db420540ce3","clientSecret":"XqIYcVm7VKcgUYiKyqBISA==","endpoint":"https://api.next.bspapp.com"}]') || [];
   let N = "";
   try {
     N = "__UNI__132E501";
@@ -3243,7 +3243,7 @@ ${o3}
     block0(_sfc_main$5);
   if (typeof block1 === "function")
     block1(_sfc_main$5);
-  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["render", _sfc_render$4], ["__scopeId", "data-v-8ff2a577"], ["__file", "/Users/mm/Documents/HBuilderProjects/发货app/uni_modules/uni-swipe-action/components/uni-swipe-action-item/uni-swipe-action-item.vue"]]);
+  const __easycom_0 = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["render", _sfc_render$4], ["__scopeId", "data-v-8ff2a577"], ["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/uni_modules/uni-swipe-action/components/uni-swipe-action-item/uni-swipe-action-item.vue"]]);
   const _sfc_main$4 = {
     name: "uniSwipeAction",
     data() {
@@ -3275,7 +3275,7 @@ ${o3}
       vue.renderSlot(_ctx.$slots, "default")
     ]);
   }
-  const __easycom_1 = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", _sfc_render$3], ["__file", "/Users/mm/Documents/HBuilderProjects/发货app/uni_modules/uni-swipe-action/components/uni-swipe-action/uni-swipe-action.vue"]]);
+  const __easycom_1 = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["render", _sfc_render$3], ["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/uni_modules/uni-swipe-action/components/uni-swipe-action/uni-swipe-action.vue"]]);
   const PACKING_CACHE_KEY = "packing_cache";
   const _sfc_main$3 = {
     onLoad() {
@@ -3882,7 +3882,7 @@ ${o3}
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesPackingIndex = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__file", "/Users/mm/Documents/HBuilderProjects/发货app/pages/packing/index.vue"]]);
+  const PagesPackingIndex = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["render", _sfc_render$2], ["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/pages/packing/index.vue"]]);
   const SHIPPING_CACHE_KEY = "shipping_cache";
   const _sfc_main$2 = {
     onLoad() {
@@ -4212,133 +4212,519 @@ ${o3}
       ])) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesShippingIndex = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__file", "/Users/mm/Documents/HBuilderProjects/发货app/pages/shipping/index.vue"]]);
+  const PagesShippingIndex = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["render", _sfc_render$1], ["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/pages/shipping/index.vue"]]);
+  const LOCAL_SEARCH_LIST_KEY = "__local_search_history";
+  const arrUnique = (arr) => {
+    for (let i2 = arr.length - 1; i2 >= 0; i2--) {
+      const curIndex = arr.indexOf(arr[i2]);
+      const lastIndex = arr.lastIndexOf(arr[i2]);
+      if (curIndex !== lastIndex) {
+        arr.splice(lastIndex, 1);
+      }
+    }
+    return arr;
+  };
+  function escapeRegExp(string) {
+    return string.replace(/[+?^${}()|[\]\\]/g, "\\$&");
+  }
   const _sfc_main$1 = {
+    watch: {
+      keyword(newVal) {
+        if (!newVal || !String(newVal).trim()) {
+          this.resetSuggestState();
+          return;
+        }
+        this.searchDebounce();
+      }
+    },
     data() {
       return {
         keyword: "",
         searched: false,
         showSuggest: false,
-        histories: ["BOX-20260307-001", "SKU-10001", "BOX-20260306-017"],
-        skuPool: [
-          "SKU-10001",
-          "SKU-10002",
-          "SKU-10003",
-          "SKU-20001",
-          "SKU-30088",
-          "SKU-ABC-01"
-        ],
-        results: []
+        histories: [],
+        associativeList: [],
+        matchList: [],
+        results: [],
+        loading: false,
+        loadingMore: false,
+        hasMore: false,
+        pageNo: 0,
+        pageSize: 20,
+        lastSearchedKeyword: "",
+        currentWhere: "",
+        suggestPageNo: 0,
+        suggestPageSize: 50,
+        suggestHasMore: false,
+        suggestLoading: false,
+        suggestKeyword: "",
+        suggestRequestToken: 0,
+        searchDebounce: () => {
+        }
       };
+    },
+    created() {
+      const localList = uni.getStorageSync(LOCAL_SEARCH_LIST_KEY);
+      this.histories = Array.isArray(localList) ? localList : [];
+      this.searchDebounce = this.debounce(this.searchEvent, 300);
+      this.mallGoodsDb = tr.database().collection("sku");
+      this.inventoryDb = tr.database().collection("inventory");
+      this.sameDb = tr.database().collection("same");
     },
     computed: {
       showSkuSuggest() {
         return this.showSuggest && !!this.keyword.trim();
       },
+      showHistoryPanel() {
+        return !this.showSkuSuggest && !this.searched && !this.keyword.trim();
+      },
+      showResultPanel() {
+        return !this.showSkuSuggest && this.searched;
+      },
       matchSkuRecommends() {
-        const key = (this.keyword || "").trim().toUpperCase();
-        if (!key)
-          return [];
-        const prefixMatched = this.skuPool.filter((item) => item.startsWith(key));
-        const containsMatched = this.skuPool.filter((item) => !item.startsWith(key) && item.includes(key));
-        return prefixMatched.concat(containsMatched).slice(0, 8);
+        return this.associativeList;
       }
     },
     methods: {
+      getCloudAPI() {
+        if (!this.cloudApi) {
+          this.cloudApi = tr.importObject("CloudAPI");
+        }
+        return this.cloudApi;
+      },
+      isQrScanType(scanType) {
+        return String(scanType || "").toUpperCase().includes("QR");
+      },
+      normalizeBoxLines(skuList) {
+        if (!Array.isArray(skuList))
+          return [];
+        return skuList.map((line) => ({
+          sku: line.sku || line.fnsku || "",
+          qty: Number(line.number || 0)
+        })).filter((line) => line.sku);
+      },
+      getResultData(res) {
+        if (res && res.result && Array.isArray(res.result.data)) {
+          return res.result.data;
+        }
+        if (res && Array.isArray(res.data)) {
+          return res.data;
+        }
+        return [];
+      },
+      buildRegexText(text) {
+        if (!text)
+          return "";
+        return escapeRegExp(String(text).trim()).replace(/\s+/g, ".*");
+      },
+      debounce(foo, delay) {
+        let timer;
+        return function(...args) {
+          if (timer)
+            clearTimeout(timer);
+          timer = setTimeout(() => {
+            foo.apply(this, args);
+          }, delay || 1e3);
+        };
+      },
+      resetSuggestState() {
+        this.associativeList = [];
+        this.suggestPageNo = 0;
+        this.suggestHasMore = false;
+        this.suggestLoading = false;
+        this.suggestKeyword = "";
+        this.suggestRequestToken += 1;
+      },
+      async loadSuggest({ reset = false } = {}) {
+        const keyword = String(this.keyword || "").trim();
+        if (!keyword) {
+          this.resetSuggestState();
+          return;
+        }
+        if (reset) {
+          this.associativeList = [];
+          this.suggestPageNo = 0;
+          this.suggestHasMore = true;
+          this.suggestKeyword = keyword;
+        }
+        if (this.suggestLoading || !reset && !this.suggestHasMore) {
+          return;
+        }
+        const currentToken = ++this.suggestRequestToken;
+        this.suggestLoading = true;
+        const nextPage = this.suggestPageNo + 1;
+        const skip = (nextPage - 1) * this.suggestPageSize;
+        const queryKeyword = this.suggestKeyword || keyword;
+        const sText = this.buildRegexText(queryKeyword);
+        try {
+          const res = await this.mallGoodsDb.where(`(${new RegExp(sText, "i")}.test(sku)||${new RegExp(sText, "i")}.test(fnsku))`).orderBy("sku", "asc").skip(skip).limit(this.suggestPageSize).get();
+          if (currentToken !== this.suggestRequestToken || String(this.keyword || "").trim() !== queryKeyword) {
+            return;
+          }
+          const data = this.getResultData(res);
+          const merged = reset ? data : this.associativeList.concat(data);
+          const dedupMap = /* @__PURE__ */ Object.create(null);
+          this.associativeList = merged.filter((item) => {
+            const key = String(item.sku || item.fnsku || item._id || "");
+            if (!key || dedupMap[key])
+              return false;
+            dedupMap[key] = true;
+            return true;
+          });
+          this.suggestPageNo = nextPage;
+          this.suggestHasMore = data.length === this.suggestPageSize;
+        } catch (error) {
+          if (reset) {
+            this.associativeList = [];
+          }
+          this.suggestHasMore = false;
+        } finally {
+          if (currentToken === this.suggestRequestToken) {
+            this.suggestLoading = false;
+          }
+        }
+      },
+      searchEvent() {
+        if (!this.keyword.trim()) {
+          this.resetSuggestState();
+          return;
+        }
+        this.loadSuggest({ reset: true });
+      },
       onKeywordInput() {
-        this.searched = false;
+        const currentKeyword = String(this.keyword || "").trim();
+        if (currentKeyword !== this.lastSearchedKeyword) {
+          this.searched = false;
+        }
         this.showSuggest = true;
       },
+      onKeywordBlur() {
+        setTimeout(() => {
+          this.showSuggest = false;
+        }, 150);
+      },
+      onSuggestReachBottom() {
+        if (!this.showSkuSuggest || this.suggestLoading || !this.suggestHasMore) {
+          return;
+        }
+        this.loadSuggest();
+      },
+      async handleBarcodeScan(content) {
+        const cloudApi = this.getCloudAPI();
+        const sku = String(await cloudApi.querySku(content) || "").trim();
+        if (!sku) {
+          uni.showToast({ title: "条码未匹配SKU", icon: "none" });
+          return;
+        }
+        this.keyword = sku;
+        await this.doSearch();
+      },
+      async handleQrCodeScan(content) {
+        const cloudApi = this.getCloudAPI();
+        const boxData = await cloudApi.queryBox(content);
+        const lines = this.normalizeBoxLines(boxData && boxData.skuList);
+        this.keyword = content;
+        this.showSuggest = false;
+        this.lastSearchedKeyword = content;
+        this.saveHistory(content);
+        this.searched = true;
+        this.loading = false;
+        this.loadingMore = false;
+        this.currentWhere = "";
+        this.pageNo = 0;
+        this.hasMore = false;
+        this.matchList = [];
+        if (!lines.length) {
+          this.results = [];
+          uni.showToast({ title: "箱号无数据", icon: "none" });
+          return;
+        }
+        this.results = [{
+          boxNo: content,
+          lines
+        }];
+      },
       scan() {
-        uni.showToast({ title: "触发扫码", icon: "none" });
+        uni.scanCode({
+          scanType: ["qrCode", "barCode"],
+          success: async (res) => {
+            const content = String(res.result || "").trim();
+            if (!content) {
+              uni.showToast({ title: "扫码内容为空", icon: "none" });
+              return;
+            }
+            this.showSuggest = false;
+            this.resetSuggestState();
+            try {
+              if (this.isQrScanType(res.scanType)) {
+                await this.handleQrCodeScan(content);
+                return;
+              }
+              await this.handleBarcodeScan(content);
+            } catch (error) {
+              uni.showToast({ title: "扫码查询失败", icon: "none" });
+            }
+          },
+          fail: () => {
+            uni.showToast({ title: "扫码失败", icon: "none" });
+          }
+        });
       },
       pickKeyword(value) {
         this.keyword = value;
         this.showSuggest = false;
+        this.doSearch();
       },
-      doSearch() {
-        if (!this.keyword) {
+      resetKeyword() {
+        this.keyword = "";
+        this.searched = false;
+        this.showSuggest = false;
+        this.resetSuggestState();
+      },
+      clearKeyword() {
+        this.resetKeyword();
+      },
+      saveHistory(value) {
+        if (!value)
+          return;
+        this.histories.unshift(value);
+        arrUnique(this.histories);
+        if (this.histories.length > 10) {
+          this.histories.pop();
+        }
+        uni.setStorageSync(LOCAL_SEARCH_LIST_KEY, this.histories);
+      },
+      clearHistories() {
+        uni.showModal({
+          content: "确认清空搜索历史吗？",
+          confirmText: "删除",
+          confirmColor: "red",
+          cancelColor: "#808080",
+          success: (res) => {
+            if (res.confirm) {
+              this.histories = [];
+              uni.removeStorageSync(LOCAL_SEARCH_LIST_KEY);
+            }
+          }
+        });
+      },
+      async fetchMatchList(regexText) {
+        this.matchList = [];
+        let skuJQL = "";
+        const sameRes = await this.sameDb.where(`${new RegExp(regexText, "i")}.test(list)`).get();
+        const sameData = this.getResultData(sameRes);
+        if (!(sameData.length >= 1 && sameData.length <= 20)) {
+          return skuJQL;
+        }
+        let skuList = [];
+        for (const item of sameData) {
+          if (Array.isArray(item.list)) {
+            skuList = skuList.concat(item.list);
+          }
+        }
+        this.matchList = [...new Set(skuList)].slice(0, 30);
+        for (let i2 = 0; i2 < this.matchList.length; i2++) {
+          const safeSku = String(this.matchList[i2]).replace(/"/g, '\\"');
+          skuJQL += `||skuList.sku =="${safeSku}"`;
+        }
+        return skuJQL;
+      },
+      async buildWhere(keyword) {
+        const regexText = this.buildRegexText(keyword);
+        if (!regexText) {
+          return "";
+        }
+        let skuJQL = "";
+        try {
+          skuJQL = await this.fetchMatchList(regexText);
+        } catch (error) {
+          this.matchList = [];
+          skuJQL = "";
+        }
+        return `(${new RegExp(regexText, "i")}.test(skuList.sku)||${new RegExp(regexText, "i")}.test(boxid)${skuJQL})&&state==1`;
+      },
+      async loadResults({ reset = false } = {}) {
+        if (!this.currentWhere || !reset && (!this.hasMore || this.loadingMore)) {
+          return;
+        }
+        if (reset) {
+          this.pageNo = 0;
+          this.results = [];
+          this.hasMore = true;
+        }
+        const nextPage = this.pageNo + 1;
+        const skip = (nextPage - 1) * this.pageSize;
+        if (nextPage === 1) {
+          this.loading = true;
+        } else {
+          this.loadingMore = true;
+        }
+        const queryRes = await this.inventoryDb.where(this.currentWhere).orderBy("boxid", "asc").skip(skip).limit(this.pageSize).get();
+        const data = this.getResultData(queryRes);
+        const mapped = data.map((item) => ({
+          boxNo: item.boxid || "-",
+          lines: Array.isArray(item.skuList) ? item.skuList.map((line) => ({
+            sku: line.sku || line.fnsku || "",
+            qty: Number(line.number || 0)
+          })) : []
+        }));
+        this.pageNo = nextPage;
+        this.hasMore = mapped.length === this.pageSize;
+        this.results = reset ? mapped : this.results.concat(mapped);
+        this.loading = false;
+        this.loadingMore = false;
+      },
+      async onResultReachBottom() {
+        if (!this.searched || this.loading || this.loadingMore || !this.hasMore) {
+          return;
+        }
+        try {
+          await this.loadResults();
+        } catch (error) {
+          this.loadingMore = false;
+          uni.showToast({ title: "加载失败", icon: "none" });
+        }
+      },
+      async doSearch() {
+        const value = String(this.keyword || "").trim();
+        if (!value) {
           uni.showToast({ title: "请输入关键字", icon: "none" });
           return;
         }
+        this.keyword = value;
         this.showSuggest = false;
-        if (!this.histories.includes(this.keyword)) {
-          this.histories.unshift(this.keyword);
-          this.histories = this.histories.slice(0, 8);
-        }
-        this.results = [
-          {
-            boxNo: "BOX-20260307-001",
-            lines: [
-              { sku: "SKU-10001", qty: 8 },
-              { sku: "SKU-10002", qty: 16 }
-            ]
-          },
-          {
-            boxNo: "BOX-20260307-002",
-            lines: [
-              { sku: "SKU-10003", qty: 12 }
-            ]
-          }
-        ];
+        this.lastSearchedKeyword = value;
+        this.saveHistory(value);
         this.searched = true;
+        this.loading = true;
+        this.loadingMore = false;
+        try {
+          this.currentWhere = await this.buildWhere(value);
+          if (!this.currentWhere) {
+            this.results = [];
+            return;
+          }
+          await this.loadResults({ reset: true });
+        } catch (error) {
+          this.results = [];
+          uni.showToast({ title: "搜索失败", icon: "none" });
+        } finally {
+          this.loading = false;
+          this.loadingMore = false;
+        }
+      },
+      colorDisplay(value) {
+        const keyword = String(this.keyword || "").trim();
+        if (!keyword || !value) {
+          return false;
+        }
+        const regexText = this.buildRegexText(keyword);
+        const re2 = new RegExp(regexText, "i");
+        return re2.test(value);
+      },
+      sameColorDisplay(value) {
+        if (!value) {
+          return false;
+        }
+        return this.matchList.includes(value);
+      },
+      getSkuTextClass(value) {
+        const isDirectHit = this.colorDisplay(value);
+        return {
+          "line-highlight": isDirectHit,
+          "line-same-highlight": !isDirectHit && this.sameColorDisplay(value)
+        };
       }
     }
   };
   function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     return vue.openBlock(), vue.createElementBlock("view", { class: "page" }, [
       vue.createElementVNode("view", { class: "search-bar" }, [
-        vue.withDirectives(vue.createElementVNode(
-          "input",
-          {
-            "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $data.keyword = $event),
-            class: "search-input",
-            placeholder: "输入箱号或 SKU",
-            onInput: _cache[1] || (_cache[1] = (...args) => $options.onKeywordInput && $options.onKeywordInput(...args)),
-            onFocus: _cache[2] || (_cache[2] = ($event) => $data.showSuggest = true)
-          },
-          null,
-          544
-          /* NEED_HYDRATION, NEED_PATCH */
-        ), [
-          [vue.vModelText, $data.keyword]
+        vue.createElementVNode("view", { class: "search-input-wrap" }, [
+          vue.withDirectives(vue.createElementVNode(
+            "input",
+            {
+              "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => $data.keyword = $event),
+              class: "search-input",
+              placeholder: "输入箱号或 SKU",
+              onInput: _cache[1] || (_cache[1] = (...args) => $options.onKeywordInput && $options.onKeywordInput(...args)),
+              onConfirm: _cache[2] || (_cache[2] = (...args) => $options.doSearch && $options.doSearch(...args)),
+              onFocus: _cache[3] || (_cache[3] = ($event) => $data.showSuggest = true),
+              onBlur: _cache[4] || (_cache[4] = (...args) => $options.onKeywordBlur && $options.onKeywordBlur(...args))
+            },
+            null,
+            544
+            /* NEED_HYDRATION, NEED_PATCH */
+          ), [
+            [vue.vModelText, $data.keyword]
+          ]),
+          $data.keyword ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "input-clear",
+            onClick: _cache[5] || (_cache[5] = vue.withModifiers((...args) => $options.clearKeyword && $options.clearKeyword(...args), ["stop"]))
+          }, "×")) : vue.createCommentVNode("v-if", true)
         ]),
         vue.createElementVNode("view", {
           class: "scan-btn",
-          onClick: _cache[3] || (_cache[3] = (...args) => $options.scan && $options.scan(...args))
+          onClick: _cache[6] || (_cache[6] = (...args) => $options.scan && $options.scan(...args))
         }, "扫码"),
         vue.createElementVNode("view", {
           class: "search-btn",
-          onClick: _cache[4] || (_cache[4] = (...args) => $options.doSearch && $options.doSearch(...args))
+          onClick: _cache[7] || (_cache[7] = (...args) => $options.doSearch && $options.doSearch(...args))
         }, "搜索")
       ]),
-      $options.showSkuSuggest ? (vue.openBlock(), vue.createElementBlock("view", {
-        key: 0,
-        class: "suggest-panel"
-      }, [
-        (vue.openBlock(true), vue.createElementBlock(
-          vue.Fragment,
-          null,
-          vue.renderList($options.matchSkuRecommends, (item) => {
-            return vue.openBlock(), vue.createElementBlock("view", {
-              key: item,
-              class: "suggest-item",
-              onClick: ($event) => $options.pickKeyword(item)
-            }, vue.toDisplayString(item), 9, ["onClick"]);
-          }),
-          128
-          /* KEYED_FRAGMENT */
-        )),
-        !$options.matchSkuRecommends.length ? (vue.openBlock(), vue.createElementBlock("view", {
+      $options.showSkuSuggest ? (vue.openBlock(), vue.createElementBlock(
+        "scroll-view",
+        {
           key: 0,
-          class: "suggest-empty"
-        }, "暂无匹配 SKU")) : vue.createCommentVNode("v-if", true)
-      ])) : vue.createCommentVNode("v-if", true),
-      !$data.searched && !$data.keyword.trim() ? (vue.openBlock(), vue.createElementBlock("view", {
+          "scroll-y": "",
+          class: "suggest-panel",
+          "lower-threshold": "60",
+          onScrolltolower: _cache[8] || (_cache[8] = (...args) => $options.onSuggestReachBottom && $options.onSuggestReachBottom(...args))
+        },
+        [
+          (vue.openBlock(true), vue.createElementBlock(
+            vue.Fragment,
+            null,
+            vue.renderList($options.matchSkuRecommends, (item) => {
+              return vue.openBlock(), vue.createElementBlock("view", {
+                key: item._id || item.sku,
+                class: "suggest-item",
+                onClick: ($event) => $options.pickKeyword(item.sku)
+              }, vue.toDisplayString(item.sku), 9, ["onClick"]);
+            }),
+            128
+            /* KEYED_FRAGMENT */
+          )),
+          $data.suggestLoading && !$options.matchSkuRecommends.length ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "suggest-empty"
+          }, "联想加载中...")) : !$data.suggestLoading && !$options.matchSkuRecommends.length ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 1,
+            class: "suggest-empty"
+          }, "暂无匹配 SKU")) : vue.createCommentVNode("v-if", true),
+          $options.matchSkuRecommends.length ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 2,
+            class: "suggest-more"
+          }, [
+            $data.suggestLoading ? (vue.openBlock(), vue.createElementBlock("text", { key: 0 }, "加载中...")) : !$data.suggestHasMore ? (vue.openBlock(), vue.createElementBlock("text", { key: 1 }, "没有更多了")) : vue.createCommentVNode("v-if", true)
+          ])) : vue.createCommentVNode("v-if", true)
+        ],
+        32
+        /* NEED_HYDRATION */
+      )) : vue.createCommentVNode("v-if", true),
+      $options.showHistoryPanel ? (vue.openBlock(), vue.createElementBlock("view", {
         key: 1,
         class: "panel"
       }, [
-        vue.createElementVNode("view", { class: "panel-title" }, "搜索历史"),
+        vue.createElementVNode("view", { class: "panel-head" }, [
+          vue.createElementVNode("view", { class: "panel-title" }, "搜索历史"),
+          $data.histories.length ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "clear-history",
+            onClick: _cache[9] || (_cache[9] = (...args) => $options.clearHistories && $options.clearHistories(...args))
+          }, "清空")) : vue.createCommentVNode("v-if", true)
+        ]),
         vue.createElementVNode("view", { class: "tags" }, [
           (vue.openBlock(true), vue.createElementBlock(
             vue.Fragment,
@@ -4353,67 +4739,95 @@ ${o3}
             128
             /* KEYED_FRAGMENT */
           ))
-        ])
-      ])) : (vue.openBlock(), vue.createElementBlock("scroll-view", {
-        key: 2,
-        "scroll-y": "",
-        class: "result-wrap"
-      }, [
-        (vue.openBlock(true), vue.createElementBlock(
-          vue.Fragment,
-          null,
-          vue.renderList($data.results, (item) => {
-            return vue.openBlock(), vue.createElementBlock("view", {
-              key: item.boxNo,
-              class: "result-card"
-            }, [
-              vue.createElementVNode(
-                "view",
-                { class: "box-no" },
-                vue.toDisplayString(item.boxNo),
-                1
-                /* TEXT */
-              ),
-              vue.createElementVNode("view", { class: "table-head" }, [
-                vue.createElementVNode("text", null, "SKU"),
-                vue.createElementVNode("text", null, "数量")
-              ]),
-              (vue.openBlock(true), vue.createElementBlock(
-                vue.Fragment,
-                null,
-                vue.renderList(item.lines, (line) => {
-                  return vue.openBlock(), vue.createElementBlock("view", {
-                    key: line.sku,
-                    class: "table-row"
-                  }, [
-                    vue.createElementVNode(
-                      "text",
-                      null,
-                      vue.toDisplayString(line.sku),
-                      1
-                      /* TEXT */
-                    ),
-                    vue.createElementVNode(
-                      "text",
-                      null,
-                      vue.toDisplayString(line.qty),
-                      1
-                      /* TEXT */
-                    )
-                  ]);
-                }),
-                128
-                /* KEYED_FRAGMENT */
-              ))
-            ]);
-          }),
-          128
-          /* KEYED_FRAGMENT */
-        ))
-      ]))
+        ]),
+        !$data.histories.length ? (vue.openBlock(), vue.createElementBlock("view", {
+          key: 0,
+          class: "result-empty"
+        }, "暂无历史记录")) : vue.createCommentVNode("v-if", true)
+      ])) : vue.createCommentVNode("v-if", true),
+      $options.showResultPanel ? (vue.openBlock(), vue.createElementBlock(
+        "scroll-view",
+        {
+          key: 2,
+          "scroll-y": "",
+          class: "result-wrap",
+          "lower-threshold": "80",
+          onScrolltolower: _cache[10] || (_cache[10] = (...args) => $options.onResultReachBottom && $options.onResultReachBottom(...args))
+        },
+        [
+          $data.loading ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 0,
+            class: "result-loading"
+          }, "搜索中...")) : $data.searched && !$data.results.length ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 1,
+            class: "result-empty"
+          }, "暂无搜索结果")) : vue.createCommentVNode("v-if", true),
+          (vue.openBlock(true), vue.createElementBlock(
+            vue.Fragment,
+            null,
+            vue.renderList($data.results, (item) => {
+              return vue.openBlock(), vue.createElementBlock("view", {
+                key: item.boxNo,
+                class: "result-card"
+              }, [
+                vue.createElementVNode(
+                  "view",
+                  { class: "box-no" },
+                  vue.toDisplayString(item.boxNo),
+                  1
+                  /* TEXT */
+                ),
+                vue.createElementVNode("view", { class: "table-head" }, [
+                  vue.createElementVNode("text", null, "SKU"),
+                  vue.createElementVNode("text", null, "数量")
+                ]),
+                (vue.openBlock(true), vue.createElementBlock(
+                  vue.Fragment,
+                  null,
+                  vue.renderList(item.lines, (line) => {
+                    return vue.openBlock(), vue.createElementBlock("view", {
+                      key: line.sku,
+                      class: "table-row"
+                    }, [
+                      vue.createElementVNode(
+                        "text",
+                        {
+                          class: vue.normalizeClass($options.getSkuTextClass(line.sku))
+                        },
+                        vue.toDisplayString(line.sku),
+                        3
+                        /* TEXT, CLASS */
+                      ),
+                      vue.createElementVNode(
+                        "text",
+                        null,
+                        vue.toDisplayString(line.qty),
+                        1
+                        /* TEXT */
+                      )
+                    ]);
+                  }),
+                  128
+                  /* KEYED_FRAGMENT */
+                ))
+              ]);
+            }),
+            128
+            /* KEYED_FRAGMENT */
+          )),
+          $data.searched && $data.results.length ? (vue.openBlock(), vue.createElementBlock("view", {
+            key: 2,
+            class: "result-more"
+          }, [
+            $data.loadingMore ? (vue.openBlock(), vue.createElementBlock("text", { key: 0 }, "加载中...")) : !$data.hasMore ? (vue.openBlock(), vue.createElementBlock("text", { key: 1 }, "没有更多了")) : vue.createCommentVNode("v-if", true)
+          ])) : vue.createCommentVNode("v-if", true)
+        ],
+        32
+        /* NEED_HYDRATION */
+      )) : vue.createCommentVNode("v-if", true)
     ]);
   }
-  const PagesSearchIndex = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__file", "/Users/mm/Documents/HBuilderProjects/发货app/pages/search/index.vue"]]);
+  const PagesSearchIndex = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["render", _sfc_render], ["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/pages/search/index.vue"]]);
   __definePage("pages/index/index", PagesIndexIndex);
   __definePage("pages/packing/index", PagesPackingIndex);
   __definePage("pages/shipping/index", PagesShippingIndex);
@@ -4429,7 +4843,7 @@ ${o3}
       formatAppLog("log", "at App.vue:10", "App Hide");
     }
   };
-  const App = /* @__PURE__ */ _export_sfc(_sfc_main, [["__file", "/Users/mm/Documents/HBuilderProjects/发货app/App.vue"]]);
+  const App = /* @__PURE__ */ _export_sfc(_sfc_main, [["__file", "/Users/chenfeng/Documents/HBuilderProjects/Shipping-App/App.vue"]]);
   function createApp() {
     const app = vue.createVueApp(App);
     return {

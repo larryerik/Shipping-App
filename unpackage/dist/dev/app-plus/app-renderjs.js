@@ -25,7 +25,7 @@ __renderjsModules["5a1e922e"] = (() => {
     default: () => stdin_default
   });
 
-  // ../../../../../../Users/mm/Documents/HBuilderProjects/发货app/uni_modules/uni-swipe-action/components/uni-swipe-action-item/render.js
+  // ../../../../../../Users/chenfeng/Documents/HBuilderProjects/Shipping-App/uni_modules/uni-swipe-action/components/uni-swipe-action-item/render.js
   var MIN_DISTANCE = 10;
   var render_default = {
     showWatch(newVal, oldVal, ownerInstance, instance, self) {
