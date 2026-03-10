@@ -7,7 +7,7 @@
 			<view class="bt-status" :class="{ connected: connectedDevice }">
 				{{ connectedDevice ? `已连接：${connectedDevice}` : '蓝牙未连接' }}
 			</view>
-			<view class="connect-btn" @click="drawerVisible = true">连接</view>
+			<view class="connect-btn" @click="openPrinterDrawer">连接</view>
 		</view>
 
 		<view class="summary">
@@ -51,10 +51,19 @@
 
 		<view class="mask" v-if="drawerVisible" @click="drawerVisible = false"></view>
 		<view class="drawer" :class="{ show: drawerVisible }">
-			<view class="drawer-title">扫描到的蓝牙设备</view>
-			<view v-for="item in btDevices" :key="item.id" class="device-item" @click="connectDevice(item.name)">
-				<text>{{ item.name }}</text>
-				<text class="device-rssi">{{ item.rssi }}</text>
+			<view class="drawer-head">
+				<view class="drawer-title">扫描到的蓝牙设备</view>
+				<view class="drawer-refresh" @click="refreshPrinters">{{ isScanning ? '扫描中' : '刷新' }}</view>
+			</view>
+			<view v-if="!btDevices.length" class="empty-tip">
+				{{ isScanning ? '正在搜索打印机...' : '未发现可用打印机' }}
+			</view>
+			<view v-for="item in btDevices" :key="item.deviceId" class="device-item" @click="connectDevice(item)">
+				<view class="device-info">
+					<text class="device-name">{{ item.name }}</text>
+					<text class="device-rssi">{{ item.rssiText }}</text>
+				</view>
+				<text class="device-action">{{ connectedDeviceId === item.deviceId ? '已连接' : '连接' }}</text>
 			</view>
 		</view>
 
@@ -78,22 +87,32 @@
 </template>
 
 <script>
+	import { LPAPIFactory } from "../../uni_modules/dothan-lpapi-ble/js_sdk"
+
 	const PACKING_CACHE_KEY = 'packing_cache'
+	const PACKING_PRINTER_CACHE_KEY = 'packing_printer_cache'
+	const PRINTER_IDLE_CLOSE_MS = 30 * 1000
 
 	export default {
 		onLoad() {
 			this.loadCache()
+			// #ifdef MP-WEIXIN
+			this.isWeiXin = true
+			this.initPrinter()
+			// #endif
 		},
 		onUnload() {
 			if (this.highlightTimer) {
 				clearTimeout(this.highlightTimer)
 				this.highlightTimer = null
 			}
+			this.teardownPrinter()
 		},
 		data() {
 			return {
 				drawerVisible: false,
 				connectedDevice: '',
+				connectedDeviceId: '',
 				weight: '',
 				boxId: '',
 				qtyPopupVisible: false,
@@ -117,11 +136,13 @@
 						}
 					}
 				],
-				btDevices: [
-					{ id: 1, name: 'Printer-BT-01', rssi: '-58dBm' },
-					{ id: 2, name: 'Scale-BT-07', rssi: '-65dBm' },
-					{ id: 3, name: 'Scanner-BT-19', rssi: '-72dBm' }
-				],
+				btDevices: [],
+				isScanning: false,
+				isConnectingPrinter: false,
+				isWeiXin: false,
+				lpapi: null,
+				printContext: null,
+				printIdleTimer: null,
 				skuList: []
 			}
 		},
@@ -137,6 +158,13 @@
 			},
 			weight() {
 				this.saveCache()
+			},
+			drawerVisible(visible) {
+				if (visible) {
+					this.refreshPrinters()
+					return
+				}
+				this.stopPrinterDiscovery()
 			}
 		},
 		computed: {
@@ -172,10 +200,156 @@
 				}
 				uni.redirectTo({ url: '/pages/index/index' })
 			},
-			connectDevice(name) {
-				this.connectedDevice = name
-				this.drawerVisible = false
-				uni.showToast({ title: '连接成功', icon: 'success' })
+			initPrinter() {
+				try {
+					this.lpapi = LPAPIFactory.getInstance({
+						showLog: 3
+					})
+					this.printContext = this.lpapi.createDrawContext()
+					this.lpapi.setDrawContext(this.printContext)
+				} catch (error) {
+					this.lpapi = null
+					this.printContext = null
+					uni.showToast({ title: '打印模块初始化失败', icon: 'none' })
+				}
+			},
+			teardownPrinter() {
+				this.clearPrintIdleTimer()
+				this.stopPrinterDiscovery()
+				if (this.lpapi) {
+					this.lpapi.closePrinter().catch(() => {})
+				}
+				this.connectedDevice = ''
+				this.connectedDeviceId = ''
+			},
+			getCachedPrinter() {
+				const cache = uni.getStorageSync(PACKING_PRINTER_CACHE_KEY)
+				if (!cache || typeof cache !== 'object') return null
+				const deviceId = String(cache.deviceId || '').trim()
+				const name = String(cache.name || '').trim()
+				if (!deviceId || !name) return null
+				return { deviceId, name }
+			},
+			saveCachedPrinter(device = {}) {
+				const deviceId = String(device.deviceId || '').trim()
+				const name = String(device.name || '').trim()
+				if (!deviceId || !name) return
+				uni.setStorageSync(PACKING_PRINTER_CACHE_KEY, {
+					deviceId,
+					name
+				})
+			},
+			clearPrintIdleTimer() {
+				if (!this.printIdleTimer) return
+				clearTimeout(this.printIdleTimer)
+				this.printIdleTimer = null
+			},
+			scheduleAutoClosePrinter() {
+				this.clearPrintIdleTimer()
+				this.printIdleTimer = setTimeout(() => {
+					this.printIdleTimer = null
+					this.closeConnectedPrinter()
+				}, PRINTER_IDLE_CLOSE_MS)
+			},
+			closeConnectedPrinter() {
+				this.clearPrintIdleTimer()
+				if (!this.lpapi) return
+				this.lpapi.closePrinter().catch(() => {})
+				this.connectedDevice = ''
+				this.connectedDeviceId = ''
+			},
+			openPrinterDrawer() {
+				if (!this.isWeiXin) {
+					uni.showToast({ title: '仅支持微信小程序', icon: 'none' })
+					return
+				}
+				if (!this.lpapi) {
+					this.initPrinter()
+				}
+				if (!this.lpapi || !this.printContext) {
+					uni.showToast({ title: '打印模块未就绪', icon: 'none' })
+					return
+				}
+				this.drawerVisible = true
+			},
+			normalizePrinterDevice(raw = {}) {
+				const deviceId = String(raw.deviceId || raw.id || '').trim()
+				const name = String(raw.name || raw.localName || '').trim() || '未命名打印机'
+				const rssi = Number(raw.RSSI || raw.rssi)
+				const rssiText = Number.isFinite(rssi) ? `${rssi}dBm` : '--'
+				return {
+					deviceId,
+					name,
+					rssiText
+				}
+			},
+			onPrinterFound(devices = []) {
+				if (!Array.isArray(devices) || !devices.length) return
+				const mergedMap = new Map(this.btDevices.map(item => [item.deviceId, item]))
+				devices
+					.map(this.normalizePrinterDevice)
+					.filter(item => item.deviceId)
+					.forEach(item => {
+						mergedMap.set(item.deviceId, item)
+					})
+				this.btDevices = Array.from(mergedMap.values())
+			},
+			async refreshPrinters() {
+				if (!this.lpapi || this.isScanning) return
+				this.btDevices = []
+				this.isScanning = true
+				try {
+					await this.lpapi.startBleDiscovery({
+						timeout: 5000,
+						deviceFound: (devices) => {
+							this.onPrinterFound(devices)
+						},
+						adapterStateChange: (result) => {
+							if (!result.discovering) this.isScanning = false
+						}
+					})
+				} catch (error) {
+					this.isScanning = false
+					uni.showToast({ title: '搜索打印机失败', icon: 'none' })
+				}
+			},
+			stopPrinterDiscovery() {
+				if (!this.lpapi) return
+				this.isScanning = false
+				this.lpapi.stopBleDiscovery().catch(() => {})
+			},
+			async connectDevice(device) {
+				if (!device || !device.deviceId || !this.lpapi || this.isConnectingPrinter) return
+				this.isConnectingPrinter = true
+				this.clearPrintIdleTimer()
+				uni.showLoading({ title: '正在连接打印机...' })
+				try {
+					const res = await this.lpapi.openPrinter({
+						name: device.name,
+						deviceId: device.deviceId,
+						tryTimes: 5,
+						connectionStateChange: (state) => {
+							if (state && state.connected === false) {
+								this.connectedDevice = ''
+								this.connectedDeviceId = ''
+							}
+						}
+					})
+					if (res && res.statusCode === 0) {
+						this.connectedDevice = device.name
+						this.connectedDeviceId = device.deviceId
+						this.saveCachedPrinter(device)
+						this.drawerVisible = false
+						uni.showToast({ title: '连接成功', icon: 'success' })
+						return
+					}
+					uni.showToast({ title: '连接失败', icon: 'none' })
+				} catch (error) {
+					uni.showToast({ title: '连接失败', icon: 'none' })
+				} finally {
+					this.isConnectingPrinter = false
+					uni.hideLoading()
+				}
 			},
 			toggleSkuSort() {
 				this.sortAsc = !this.sortAsc
@@ -433,8 +607,183 @@
 					uni.showToast({ title: '更新失败', icon: 'none' })
 				}
 			},
+			async ensurePrinterConnected() {
+				if (!this.lpapi || !this.printContext) return false
+				if (this.lpapi.isPrinterOpened()) return true
+				if (!this.connectedDeviceId) {
+					const cached = this.getCachedPrinter()
+					if (!cached) return false
+					this.connectedDeviceId = cached.deviceId
+					this.connectedDevice = cached.name
+				}
+				try {
+					const res = await this.lpapi.openPrinter({
+						name: this.connectedDevice,
+						deviceId: this.connectedDeviceId,
+						tryTimes: 5,
+						connectionStateChange: (state) => {
+							if (state && state.connected === false) {
+								this.connectedDevice = ''
+								this.connectedDeviceId = ''
+							}
+						}
+					})
+					if (res && res.statusCode === 0) {
+						this.saveCachedPrinter({
+							deviceId: this.connectedDeviceId,
+							name: this.connectedDevice
+						})
+					}
+					return !!(res && res.statusCode === 0)
+				} catch (error) {
+					return false
+				}
+			},
+			async waitCanvasReady(jobInfo) {
+				if (!jobInfo || !jobInfo.canvas) return
+				await new Promise(resolve => setTimeout(resolve, 100))
+			},
+			getPrintTimeText() {
+				const now = new Date()
+				const pad = (v) => String(v).padStart(2, '0')
+				return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+			},
+			drawPackingLabel(boxid, weight) {
+				const api = this.lpapi
+				const labelWidth = 70
+				const labelHeight = 50
+				const margin = 3
+				const qrSize = 21
+				const textWidth = labelWidth - qrSize - margin * 3
+
+				const jobInfo = api.startJob({
+					context: this.printContext,
+					width: labelWidth,
+					height: labelHeight,
+					orientation: 0,
+					isPreview: false
+				})
+				return this.waitCanvasReady(jobInfo).then(() => {
+					api.drawText({
+						text: '装箱标签',
+						x: margin,
+						y: 2.5,
+						width: textWidth,
+						height: 6,
+						fontHeight: 4.8
+					})
+					api.drawText({
+						text: `箱号: ${boxid}`,
+						x: margin,
+						y: 10,
+						width: textWidth,
+						height: 5,
+						fontHeight: 3.6
+					})
+					api.drawText({
+						text: `重量: ${weight}kg`,
+						x: margin,
+						y: 16.2,
+						width: textWidth,
+						height: 5,
+						fontHeight: 3.4
+					})
+					api.drawText({
+						text: `SKU种类: ${this.skuCount}`,
+						x: margin,
+						y: 22.4,
+						width: textWidth,
+						height: 5,
+						fontHeight: 3.4
+					})
+					api.drawText({
+						text: `总数量: ${this.totalQty}`,
+						x: margin,
+						y: 28.6,
+						width: textWidth,
+						height: 5,
+						fontHeight: 3.4
+					})
+					api.drawText({
+						text: this.getPrintTimeText(),
+						x: margin,
+						y: 35,
+						width: textWidth,
+						height: 4.8,
+						fontHeight: 2.9
+					})
+					api.draw2DQRCode({
+						text: boxid,
+						x: labelWidth - qrSize - margin,
+						y: margin,
+						width: qrSize,
+						height: qrSize
+					})
+					api.drawText({
+						text: boxid,
+						x: labelWidth - qrSize - margin,
+						y: margin + qrSize + 1,
+						width: qrSize,
+						height: 5,
+						fontHeight: 2.6,
+						horizontalAlignment: 1
+					})
+
+					return api.commitJob({
+						gapType: 2,
+						printDarkness: 8,
+						printSpeed: 3
+					})
+				})
+			},
 			printOptions() {
-				uni.showToast({ title: "打印", icon: 'none' })
+				// #ifndef MP-WEIXIN
+				uni.showToast({ title: '仅支持微信小程序', icon: 'none' })
+				return
+				// #endif
+
+				const boxid = String(this.boxId || '').trim()
+				if (!boxid) {
+					uni.showToast({ title: '没有箱号', icon: 'none' })
+					return
+				}
+				const weight = String(this.weight || '').trim()
+				if (!weight) {
+					uni.showToast({ title: '请先输入重量', icon: 'none' })
+					return
+				}
+				if (!this.skuList.length) {
+					uni.showToast({ title: '产品列表为空', icon: 'none' })
+					return
+				}
+				if (!this.lpapi || !this.printContext) {
+					uni.showToast({ title: '打印模块未就绪', icon: 'none' })
+					return
+				}
+
+				this.handlePrint(boxid, weight)
+			},
+			async handlePrint(boxid, weight) {
+				this.clearPrintIdleTimer()
+				const connected = await this.ensurePrinterConnected()
+				if (!connected) {
+					uni.showToast({ title: '未找到可用打印机，请先手动连接一次', icon: 'none' })
+					return
+				}
+				uni.showLoading({ title: '正在打印...' })
+				try {
+					const res = await this.drawPackingLabel(boxid, weight)
+					uni.hideLoading()
+					if (res && res.statusCode === 0) {
+						this.scheduleAutoClosePrinter()
+						uni.showToast({ title: '打印成功', icon: 'success' })
+						return
+					}
+					uni.showToast({ title: (res && res.errMsg) || '打印失败', icon: 'none' })
+				} catch (error) {
+					uni.hideLoading()
+					uni.showToast({ title: '打印失败', icon: 'none' })
+				}
 			}
 		}
 	}
@@ -682,7 +1031,27 @@
 		font-size: 30rpx;
 		font-weight: 700;
 		color: #1c2e52;
+	}
+
+	.drawer-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		margin-bottom: 20rpx;
+	}
+
+	.drawer-refresh {
+		font-size: 22rpx;
+		color: #2f7ce0;
+		background: #eef4ff;
+		border-radius: 999rpx;
+		padding: 8rpx 18rpx;
+	}
+
+	.empty-tip {
+		padding: 24rpx 12rpx;
+		color: #7a889f;
+		font-size: 24rpx;
 	}
 
 	.device-item {
@@ -696,8 +1065,24 @@
 		font-size: 24rpx;
 	}
 
+	.device-info {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.device-name {
+		color: #1f2d4d;
+	}
+
 	.device-rssi {
 		color: #7a889f;
+		font-size: 20rpx;
+		margin-top: 6rpx;
+	}
+
+	.device-action {
+		color: #2f7ce0;
+		font-weight: 600;
 	}
 
 	.qty-popup {

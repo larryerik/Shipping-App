@@ -212,7 +212,24 @@
 		font-size: 30rpx;
 		font-weight: 700;
 		color: #1c2e52;
+}
+.drawer-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		margin-bottom: 20rpx;
+}
+.drawer-refresh {
+		font-size: 22rpx;
+		color: #2f7ce0;
+		background: #eef4ff;
+		border-radius: 999rpx;
+		padding: 8rpx 18rpx;
+}
+.empty-tip {
+		padding: 24rpx 12rpx;
+		color: #7a889f;
+		font-size: 24rpx;
 }
 .device-item {
 		display: flex;
@@ -224,8 +241,21 @@
 		background: #f4f8ff;
 		font-size: 24rpx;
 }
+.device-info {
+		display: flex;
+		flex-direction: column;
+}
+.device-name {
+		color: #1f2d4d;
+}
 .device-rssi {
 		color: #7a889f;
+		font-size: 20rpx;
+		margin-top: 6rpx;
+}
+.device-action {
+		color: #2f7ce0;
+		font-weight: 600;
 }
 .qty-popup {
 		position: fixed;
