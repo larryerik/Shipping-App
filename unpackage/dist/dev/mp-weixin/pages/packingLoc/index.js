@@ -2,7 +2,7 @@
 const common_vendor = require("../../common/vendor.js");
 const uni_modules_dothanLpapiBle_js_sdk_index = require("../../uni_modules/dothan-lpapi-ble/js_sdk/index.js");
 const PACKING_CACHE_KEY = "packing_cache";
-const PACKING_PRINTER_CACHE_KEY = "packing_printer_cache";
+const PACKING_PRINTER_CACHE_KEY = "packing_loc_printer_cache";
 const PRINTER_IDLE_CLOSE_MS = 30 * 1e3;
 const _sfc_main = {
   onLoad() {
@@ -23,7 +23,6 @@ const _sfc_main = {
       connectedDevice: "",
       connectedDeviceId: "",
       weight: "",
-      boxId: "",
       qtyPopupVisible: false,
       qtyInputFocus: false,
       editingFnsku: "",
@@ -64,9 +63,6 @@ const _sfc_main = {
         this.saveCache();
       }
     },
-    boxId() {
-      this.saveCache();
-    },
     weight() {
       this.saveCache();
     },
@@ -96,15 +92,15 @@ const _sfc_main = {
         return;
       if (Array.isArray(cache.skuList))
         this.skuList = cache.skuList;
-      if (typeof cache.boxId === "string")
-        this.boxId = cache.boxId;
       if (typeof cache.weight === "string")
         this.weight = cache.weight;
     },
     saveCache() {
+      const prevCache = common_vendor.index.getStorageSync(PACKING_CACHE_KEY);
+      const safePrevCache = prevCache && typeof prevCache === "object" ? prevCache : {};
       common_vendor.index.setStorageSync(PACKING_CACHE_KEY, {
+        ...safePrevCache,
         skuList: this.skuList,
-        boxId: this.boxId,
         weight: this.weight
       });
     },
@@ -365,9 +361,6 @@ const _sfc_main = {
     isBatchSkuQRCode(content) {
       return /^[^,;|]+,\d+(?:;[^,;|]+,\d+)*\|-?\d+(?:\.\d+)?$/.test(content);
     },
-    isBoxQRCode(content) {
-      return /^[A-Z]+_\d+$/.test(content);
-    },
     async handleBarcodeScan(code, qty, targetIndex = this.pendingScanIndex) {
       if (targetIndex >= 0) {
         const target = this.skuList[targetIndex];
@@ -423,25 +416,6 @@ const _sfc_main = {
         common_vendor.index.showToast({ title: "批量查询失败", icon: "none" });
       }
     },
-    async handleBoxQrScan(content) {
-      this.skuList = [];
-      this.boxId = content;
-      try {
-        const cloudApi = this.getCloudAPI();
-        const boxRes = await cloudApi.queryBox(content);
-        if (!boxRes || !boxRes.skuList) {
-          return;
-        }
-        const loadedList = Array.isArray(boxRes.skuList) ? boxRes.skuList.map(this.normalizeSkuItem).filter((item) => item.fnsku) : [];
-        this.skuList = loadedList;
-        this.weight = boxRes.weight ? String(boxRes.weight) : "";
-        this.$nextTick(() => {
-          this.scrollToIndex(this.skuList.length - 1);
-        });
-      } catch (error) {
-        common_vendor.index.showToast({ title: "箱号查询失败", icon: "none" });
-      }
-    },
     async confirmQty() {
       const qty = Number(this.editingQty);
       if (!qty || qty <= 0) {
@@ -470,14 +444,10 @@ const _sfc_main = {
             return;
           }
           const scanType = String(res.scanType || "").toUpperCase();
-          const isQr = scanType.includes("QR") || this.isBatchSkuQRCode(content) || this.isBoxQRCode(content);
+          const isQr = scanType.includes("QR") || this.isBatchSkuQRCode(content);
           if (isQr) {
             if (this.isBatchSkuQRCode(content)) {
               await this.handleBatchQrScan(content);
-              return;
-            }
-            if (this.isBoxQRCode(content)) {
-              await this.handleBoxQrScan(content);
               return;
             }
             common_vendor.index.showToast({ title: "二维码格式不支持", icon: "none" });
@@ -495,45 +465,15 @@ const _sfc_main = {
       this.skuList = [];
       this.weight = "";
     },
-    async updateData() {
-      const boxid = String(this.boxId || "").trim();
-      const weight = String(this.weight || "").trim();
-      if (!boxid) {
-        common_vendor.index.showToast({ title: "没有箱号", icon: "none" });
-        return;
-      }
-      if (!weight) {
-        common_vendor.index.showToast({ title: "请先输入重量", icon: "none" });
-        return;
-      }
-      if (!this.skuList.length) {
-        common_vendor.index.showToast({ title: "产品列表为空", icon: "none" });
-        return;
-      }
-      const skuList = this.skuList.map((item) => ({
-        fnsku: String(item.fnsku || "").trim(),
-        number: Number(item.number || 0)
-      }));
-      const hasInvalid = skuList.some((item) => !item.fnsku || !item.number || item.number <= 0);
-      if (hasInvalid) {
-        common_vendor.index.showToast({ title: "存在无效SKU数量", icon: "none" });
-        return;
-      }
-      try {
-        const cloudApi = this.getCloudAPI();
-        const res = await cloudApi.updateBox(boxid, skuList, weight);
-        if (res === 1) {
-          common_vendor.index.showToast({ title: "更新成功", icon: "success" });
-          return;
-        }
-        if (res === 0) {
-          common_vendor.index.showToast({ title: "新增成功", icon: "success" });
-          return;
-        }
-        common_vendor.index.showToast({ title: "提交完成", icon: "success" });
-      } catch (error) {
-        common_vendor.index.showToast({ title: "更新失败", icon: "none" });
-      }
+    buildPrintQrData() {
+      const items = this.skuList.map((item) => {
+        const fnsku = String(item.fnsku || item.sku || "").trim();
+        const number = Number(item.number || 0);
+        if (!fnsku || !number)
+          return "";
+        return `${fnsku},${number}`;
+      }).filter(Boolean);
+      return `${items.join(";")}|${String(this.weight || "").trim()}`;
     },
     async ensurePrinterConnected() {
       if (!this.lpapi || !this.printContext)
@@ -575,12 +515,11 @@ const _sfc_main = {
         return;
       await new Promise((resolve) => setTimeout(resolve, 100));
     },
-    async drawPackingLabel(boxid, weight) {
+    async drawPackingLabel(weight) {
       const api = this.lpapi;
       const dataLength = this.skuList.length;
-      let currentY = 10;
-      let fontHeight = 10;
-      const jobInfo = api.startJob({
+      const QRdata = this.buildPrintQrData();
+      const jobInfo = await api.startJob({
         context: this.printContext,
         width: 50,
         height: 80,
@@ -588,72 +527,98 @@ const _sfc_main = {
         isPreview: false
       });
       await this.waitCanvasReady(jobInfo);
-      api.drawText({
-        text: String(boxid || ""),
-        x: 3,
-        y: 1,
-        width: 35,
-        height: 10,
-        autoReturn: false,
-        fontStyle: 1
+      await api.draw2DQRCode({
+        text: QRdata,
+        x: 5,
+        y: 3,
+        width: 30,
+        eccLevel: 1
       });
-      api.drawText({
+      await api.drawText({
         text: String(weight || ""),
         x: 38,
-        y: 1,
+        y: 15,
         width: 10,
         height: 10,
-        autoReturn: false,
-        fontStyle: 1
+        autoReturn: false
       });
       switch (true) {
-        case dataLength <= 7:
+        case dataLength === 1:
+          await api.drawText({
+            text: String(this.skuList[0].sku || ""),
+            x: 3,
+            y: 35,
+            width: 47,
+            height: 12,
+            autoReturn: false
+          });
+          await api.drawText({
+            text: String(this.skuList[0].number || ""),
+            x: 25,
+            y: 50,
+            width: 20,
+            height: 10,
+            autoReturn: false
+          });
+          break;
+        case dataLength === 2:
+          await api.drawText({
+            text: String(this.skuList[0].sku || ""),
+            x: 3,
+            y: 33,
+            width: 47,
+            height: 10,
+            autoReturn: false
+          });
+          await api.drawText({
+            text: String(this.skuList[0].number || ""),
+            x: 25,
+            y: 43,
+            width: 20,
+            height: 8
+          });
+          await api.drawText({
+            text: String(this.skuList[1].sku || ""),
+            x: 3,
+            y: 51,
+            width: 47,
+            height: 10,
+            autoReturn: false
+          });
+          await api.drawText({
+            text: String(this.skuList[1].number || ""),
+            x: 25,
+            y: 60,
+            width: 20,
+            height: 8
+          });
+          break;
+        case dataLength >= 3: {
+          let poy = 33;
+          const fontHeight = parseInt(46 / dataLength, 10);
           for (let i = 0; i < dataLength; i += 1) {
-            api.drawText({
+            await api.drawText({
               text: String(this.skuList[i].sku || ""),
               x: 2,
-              y: currentY,
-              width: 40,
+              y: poy,
+              width: 41,
               height: fontHeight,
               autoReturn: false,
               fontStyle: 1
             });
-            api.drawText({
+            await api.drawText({
               text: String(this.skuList[i].number || ""),
               x: 44,
-              y: currentY,
+              y: poy,
               width: 5,
               height: fontHeight,
               autoReturn: false,
               fontStyle: 1
             });
-            currentY += fontHeight;
+            poy += fontHeight;
           }
           break;
-        case dataLength > 7:
-          fontHeight = parseInt(70 / dataLength, 10);
-          for (let i = 0; i < dataLength; i += 1) {
-            api.drawText({
-              text: String(this.skuList[i].sku || ""),
-              x: 2.5,
-              y: currentY,
-              width: 40,
-              height: fontHeight,
-              autoReturn: false,
-              fontStyle: 1
-            });
-            api.drawText({
-              text: String(this.skuList[i].number || ""),
-              x: 44,
-              y: currentY,
-              width: 5,
-              height: fontHeight,
-              autoReturn: false,
-              fontStyle: 1
-            });
-            currentY += fontHeight;
-          }
-          break;
+        }
       }
       return api.commitJob({
         gapType: 2,
@@ -664,11 +629,6 @@ const _sfc_main = {
     printOptions() {
       if (this.printBusy)
         return;
-      const boxid = String(this.boxId || "").trim();
-      if (!boxid) {
-        common_vendor.index.showToast({ title: "没有箱号", icon: "none" });
-        return;
-      }
       const weight = String(this.weight || "").trim();
       if (!weight) {
         common_vendor.index.showToast({ title: "请先输入重量", icon: "none" });
@@ -682,9 +642,9 @@ const _sfc_main = {
         common_vendor.index.showToast({ title: "打印模块未就绪", icon: "none" });
         return;
       }
-      this.handlePrint(boxid, weight);
+      this.handlePrint(weight);
     },
-    async handlePrint(boxid, weight) {
+    async handlePrint(weight) {
       if (this.printBusy)
         return;
       this.clearPrintIdleTimer();
@@ -697,7 +657,7 @@ const _sfc_main = {
           return;
         }
         this.setPrintBusy(true, "正在打印...");
-        const res = await this.drawPackingLabel(boxid, weight);
+        const res = await this.drawPackingLabel(weight);
         if (res && res.statusCode === 0) {
           this.scheduleAutoClosePrinter();
           common_vendor.index.showToast({ title: "打印成功", icon: "success" });
@@ -742,7 +702,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         f: common_vendor.o(($event) => $options.openQtyPopup(item), `${item.fnsku}-${index}`),
         g: `${item.fnsku}-${index}`,
         h: common_vendor.o(($event) => $options.onSwipeClick($event, item.fnsku), `${item.fnsku}-${index}`),
-        i: "073331f9-1-" + i0 + ",073331f9-0"
+        i: "66850a9d-1-" + i0 + ",66850a9d-0"
       };
     }),
     j: common_vendor.p({
@@ -751,23 +711,20 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     k: $data.scrollIntoViewId,
     l: $data.weight,
     m: common_vendor.o(($event) => $data.weight = $event.detail.value),
-    n: $data.boxId,
-    o: common_vendor.o(($event) => $data.boxId = $event.detail.value),
-    p: common_vendor.o((...args) => $options.scanGoods && $options.scanGoods(...args)),
-    q: common_vendor.o((...args) => $options.clearAll && $options.clearAll(...args)),
-    r: common_vendor.o((...args) => $options.updateData && $options.updateData(...args)),
-    s: common_vendor.o((...args) => $options.printOptions && $options.printOptions(...args)),
-    t: $data.drawerVisible
+    n: common_vendor.o((...args) => $options.scanGoods && $options.scanGoods(...args)),
+    o: common_vendor.o((...args) => $options.clearAll && $options.clearAll(...args)),
+    p: common_vendor.o((...args) => $options.printOptions && $options.printOptions(...args)),
+    q: $data.drawerVisible
   }, $data.drawerVisible ? {
-    v: common_vendor.o(($event) => $data.drawerVisible = false)
+    r: common_vendor.o(($event) => $data.drawerVisible = false)
   } : {}, {
-    w: common_vendor.t($data.isScanning ? "扫描中" : "刷新"),
-    x: common_vendor.o((...args) => $options.refreshPrinters && $options.refreshPrinters(...args)),
-    y: !$data.btDevices.length
+    s: common_vendor.t($data.isScanning ? "扫描中" : "刷新"),
+    t: common_vendor.o((...args) => $options.refreshPrinters && $options.refreshPrinters(...args)),
+    v: !$data.btDevices.length
   }, !$data.btDevices.length ? {
-    z: common_vendor.t($data.isScanning ? "正在搜索打印机..." : "未发现可用打印机")
+    w: common_vendor.t($data.isScanning ? "正在搜索打印机..." : "未发现可用打印机")
   } : {}, {
-    A: common_vendor.f($data.btDevices, (item, k0, i0) => {
+    x: common_vendor.f($data.btDevices, (item, k0, i0) => {
       return {
         a: common_vendor.t(item.name),
         b: common_vendor.t(item.rssiText),
@@ -776,27 +733,27 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         e: common_vendor.o(($event) => $options.connectDevice(item), item.deviceId)
       };
     }),
-    B: $data.drawerVisible ? 1 : "",
-    C: $data.qtyPopupVisible
+    y: $data.drawerVisible ? 1 : "",
+    z: $data.qtyPopupVisible
   }, $data.qtyPopupVisible ? {
-    D: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args))
+    A: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args))
   } : {}, {
-    E: $data.qtyPopupVisible
+    B: $data.qtyPopupVisible
   }, $data.qtyPopupVisible ? {
-    F: common_vendor.t($data.qtyPopupMode === "scanAdd" ? `输入数量：${$data.editingTitle}` : `修改 ${$data.editingTitle}`),
-    G: `${$data.editingOldQty}`,
-    H: $data.qtyInputFocus,
-    I: common_vendor.o(($event) => $data.qtyInputFocus = false),
-    J: $data.editingQty,
-    K: common_vendor.o(($event) => $data.editingQty = $event.detail.value),
-    L: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args)),
-    M: common_vendor.o((...args) => $options.confirmQty && $options.confirmQty(...args))
+    C: common_vendor.t($data.qtyPopupMode === "scanAdd" ? `输入数量：${$data.editingTitle}` : `修改 ${$data.editingTitle}`),
+    D: `${$data.editingOldQty}`,
+    E: $data.qtyInputFocus,
+    F: common_vendor.o(($event) => $data.qtyInputFocus = false),
+    G: $data.editingQty,
+    H: common_vendor.o(($event) => $data.editingQty = $event.detail.value),
+    I: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args)),
+    J: common_vendor.o((...args) => $options.confirmQty && $options.confirmQty(...args))
   } : {}, {
-    N: $data.printBusy
+    K: $data.printBusy
   }, $data.printBusy ? {
-    O: common_vendor.t($data.printBusyText || "处理中...")
+    L: common_vendor.t($data.printBusyText || "处理中...")
   } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);
-//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/packing/index.js.map
+//# sourceMappingURL=../../../.sourcemap/mp-weixin/pages/packingLoc/index.js.map

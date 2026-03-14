@@ -11,11 +11,18 @@
 			"style": {
 				"navigationStyle": "custom"
 			}
+			
 		},
 		{
 			"path": "pages/shipping/index",
 			"style": {
 				"navigationBarTitleText": "发货"
+			}
+		},
+		{
+			"path": "pages/packingLoc/index",
+			"style": {
+				"navigationStyle": "custom"
 			}
 		},
 		{

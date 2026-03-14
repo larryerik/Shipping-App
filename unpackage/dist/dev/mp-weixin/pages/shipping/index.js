@@ -15,7 +15,11 @@ const _sfc_main = {
     return {
       detailVisible: false,
       currentBox: { boxNo: "", details: [] },
-      boxes: []
+      boxes: [],
+      operationVisible: false,
+      exportVisible: false,
+      exportAction: "",
+      exportFileName: ""
     };
   },
   watch: {
@@ -123,59 +127,77 @@ const _sfc_main = {
       const noExt = trimmed.replace(/\.csv$/i, "");
       return noExt.replace(/[\\/:*?"<>|]/g, "_").trim();
     },
-    promptExportFileName() {
-      return new Promise((resolve, reject) => {
-        common_vendor.index.showModal({
-          title: "导出文件名",
-          editable: true,
-          placeholderText: `默认：${this.getTodayString()}`,
-          success: (res) => {
-            if (!res.confirm) {
-              reject(new Error("cancel"));
+    isCancelError(error) {
+      const message = String(
+        error && error.errMsg || error && error.message || error || ""
+      );
+      return /cancel/i.test(message);
+    },
+    getWeChatUserDataPath() {
+      if (typeof common_vendor.wx$1 !== "undefined" && common_vendor.wx$1.env && common_vendor.wx$1.env.USER_DATA_PATH) {
+        return common_vendor.wx$1.env.USER_DATA_PATH;
+      }
+      return "";
+    },
+    getWeChatFileSystemManager() {
+      if (typeof common_vendor.wx$1 !== "undefined" && typeof common_vendor.wx$1.getFileSystemManager === "function") {
+        return common_vendor.wx$1.getFileSystemManager();
+      }
+      return null;
+    },
+    shareFileToWeChat(filePath, fileName, options = {}) {
+      const { afterSuccess } = options;
+      if (typeof common_vendor.wx$1 !== "undefined" && typeof common_vendor.wx$1.shareFileMessage === "function") {
+        common_vendor.wx$1.shareFileMessage({
+          filePath,
+          fileName,
+          success: async () => {
+            if (typeof afterSuccess === "function") {
+              try {
+                await afterSuccess();
+              } catch (error) {
+                common_vendor.index.__f__("error", "at pages/shipping/index.vue:247", "分享成功后的处理失败", error);
+              }
+            }
+          },
+          fail: (error) => {
+            common_vendor.index.__f__("error", "at pages/shipping/index.vue:252", "微信文件分享失败", error);
+            if (this.isCancelError(error)) {
               return;
             }
-            const inputName = this.sanitizeFileName(res.content || "");
-            resolve(inputName || this.getTodayString());
-          },
-          fail: reject
+            common_vendor.index.showToast({ title: "文件分享失败", icon: "none" });
+          }
         });
-      });
+        return true;
+      }
+      return false;
     },
-    async exportCsv(baseName) {
+    createWeChatShareFile(baseName) {
+      const safeBaseName = this.sanitizeFileName(baseName || "") || this.getTodayString();
+      const fileName = `${safeBaseName}.csv`;
+      const csv = "\uFEFF" + this.buildCsvContent();
+      const fileSystemManager = this.getWeChatFileSystemManager();
+      const userDataPath = this.getWeChatUserDataPath();
+      if (!fileSystemManager || !userDataPath) {
+        throw new Error("unsupported");
+      }
+      const filePath = `${userDataPath}/${fileName}`;
+      fileSystemManager.writeFileSync(filePath, csv, "utf8");
+      return { filePath, fileName };
+    },
+    exportCsv(baseName, options = {}) {
       if (!this.boxes.length) {
         common_vendor.index.showToast({ title: "暂无可导出数据", icon: "none" });
         return false;
       }
       try {
-        const finalBaseName = this.sanitizeFileName(baseName || "");
-        const safeBaseName = finalBaseName || this.getTodayString();
-        const fileName = `${safeBaseName}.csv`;
-        const csv = "\uFEFF" + this.buildCsvContent();
-        if (typeof common_vendor.index.getFileSystemManager === "function" && common_vendor.index.env && common_vendor.index.env.USER_DATA_PATH) {
-          const filePath = `${common_vendor.index.env.USER_DATA_PATH}/${fileName}`;
-          await new Promise((resolve, reject) => {
-            common_vendor.index.getFileSystemManager().writeFile({
-              filePath,
-              data: csv,
-              encoding: "utf8",
-              success: resolve,
-              fail: reject
-            });
-          });
-          common_vendor.index.showToast({ title: "导出成功", icon: "success" });
-          return true;
-        }
-        await new Promise((resolve, reject) => {
-          common_vendor.index.setClipboardData({
-            data: csv,
-            success: resolve,
-            fail: reject
-          });
-        });
-        common_vendor.index.showToast({ title: "已复制CSV到剪贴板", icon: "none" });
-        return true;
+        const { filePath, fileName } = this.createWeChatShareFile(baseName);
+        return this.shareFileToWeChat(filePath, fileName, options);
+        common_vendor.index.showToast({ title: "仅支持微信小程序导出分享", icon: "none" });
+        return false;
       } catch (error) {
-        if (String(error && error.message) === "cancel") {
+        common_vendor.index.__f__("error", "at pages/shipping/index.vue:290", "导出文件失败", error);
+        if (this.isCancelError(error)) {
           return false;
         }
         common_vendor.index.showToast({ title: "导出失败", icon: "none" });
@@ -293,39 +315,37 @@ const _sfc_main = {
       this.currentBox = item;
       this.detailVisible = true;
     },
-    operateOptions() {
-      common_vendor.index.showActionSheet({
-        itemList: ["导出并出库", "导出", "出库", "入库"],
-        success: async (res) => {
-          if (res.tapIndex === 0) {
-            let fileName = "";
-            try {
-              fileName = await this.promptExportFileName();
-            } catch (error) {
-              return;
-            }
-            await this.changeWarehouseState("out");
-            await this.exportCsv(fileName);
-            return;
-          }
-          if (res.tapIndex === 1) {
-            try {
-              const fileName = await this.promptExportFileName();
-              await this.exportCsv(fileName);
-            } catch (error) {
-              return;
-            }
-            return;
-          }
-          if (res.tapIndex === 2) {
-            await this.changeWarehouseState("out");
-            return;
-          }
-          if (res.tapIndex === 3) {
-            await this.changeWarehouseState("in");
-          }
-        }
-      });
+    openOperatePanel() {
+      this.operationVisible = true;
+    },
+    closeOperatePanel() {
+      this.operationVisible = false;
+    },
+    prepareExport(action) {
+      this.exportAction = action;
+      this.exportFileName = this.getTodayString();
+      this.operationVisible = false;
+      this.exportVisible = true;
+    },
+    closeExportPanel() {
+      this.exportVisible = false;
+      this.exportAction = "";
+    },
+    submitExport() {
+      const fileName = this.sanitizeFileName(this.exportFileName) || this.getTodayString();
+      const action = this.exportAction;
+      this.closeExportPanel();
+      if (action === "export-and-out") {
+        this.exportCsv(fileName, {
+          afterSuccess: () => this.changeWarehouseState("out")
+        });
+        return;
+      }
+      this.exportCsv(fileName);
+    },
+    async handleWarehouseTap(action) {
+      this.closeOperatePanel();
+      await this.changeWarehouseState(action);
     }
   }
 };
@@ -347,7 +367,7 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     d: common_vendor.t($options.totalWeight),
     e: common_vendor.o((...args) => $options.scanBox && $options.scanBox(...args)),
     f: common_vendor.o((...args) => $options.clearAll && $options.clearAll(...args)),
-    g: common_vendor.o((...args) => $options.operateOptions && $options.operateOptions(...args)),
+    g: common_vendor.o((...args) => $options.openOperatePanel && $options.openOperatePanel(...args)),
     h: $data.detailVisible
   }, $data.detailVisible ? {
     i: common_vendor.o(($event) => $data.detailVisible = false)
@@ -366,7 +386,30 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     })
   } : {}, {
     n: common_vendor.o(($event) => $data.detailVisible = false)
-  }) : {});
+  }) : {}, {
+    o: $data.operationVisible
+  }, $data.operationVisible ? {
+    p: common_vendor.o((...args) => $options.closeOperatePanel && $options.closeOperatePanel(...args))
+  } : {}, {
+    q: $data.operationVisible
+  }, $data.operationVisible ? {
+    r: common_vendor.o(($event) => $options.prepareExport("export-and-out")),
+    s: common_vendor.o(($event) => $options.prepareExport("export")),
+    t: common_vendor.o(($event) => $options.handleWarehouseTap("out")),
+    v: common_vendor.o(($event) => $options.handleWarehouseTap("in")),
+    w: common_vendor.o((...args) => $options.closeOperatePanel && $options.closeOperatePanel(...args))
+  } : {}, {
+    x: $data.exportVisible
+  }, $data.exportVisible ? {
+    y: common_vendor.o((...args) => $options.closeExportPanel && $options.closeExportPanel(...args))
+  } : {}, {
+    z: $data.exportVisible
+  }, $data.exportVisible ? {
+    A: $data.exportFileName,
+    B: common_vendor.o(($event) => $data.exportFileName = $event.detail.value),
+    C: common_vendor.o((...args) => $options.closeExportPanel && $options.closeExportPanel(...args)),
+    D: common_vendor.o((...args) => $options.submitExport && $options.submitExport(...args))
+  } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
 wx.createPage(MiniProgramPage);

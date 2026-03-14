@@ -110,6 +110,21 @@
 		flex-direction: column;
 		box-sizing: border-box;
 }
+.action-popup,
+	.export-popup {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 580rpx;
+		background: #fff;
+		border-radius: 18rpx;
+		padding: 24rpx;
+		z-index: 30;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+}
 .title {
 		font-size: 30rpx;
 		font-weight: 700;
@@ -149,4 +164,48 @@
 		color: #fff;
 		position: relative;
 		z-index: 3;
+}
+.close-btn.secondary {
+		background: #edf1f9;
+		color: #33415f;
+}
+.action-item {
+		height: 76rpx;
+		line-height: 76rpx;
+		text-align: center;
+		border-radius: 12rpx;
+		background: #f5f7fb;
+		color: #33415f;
+		font-size: 26rpx;
+		margin-bottom: 12rpx;
+}
+.export-input {
+		height: 80rpx;
+		border-radius: 12rpx;
+		background: #f5f7fb;
+		padding: 0 20rpx;
+		font-size: 26rpx;
+		color: #33415f;
+		margin-bottom: 20rpx;
+		box-sizing: border-box;
+}
+.popup-actions {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 12rpx;
+}
+.popup-btn {
+		height: 72rpx;
+		line-height: 72rpx;
+		text-align: center;
+		border-radius: 12rpx;
+		font-size: 26rpx;
+}
+.popup-btn.cancel {
+		background: #edf1f9;
+		color: #33415f;
+}
+.popup-btn.confirm {
+		background: #2f7ce0;
+		color: #fff;
 }

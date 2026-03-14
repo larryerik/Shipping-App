@@ -15,6 +15,11 @@ const _sfc_main = {
           path: "/pages/shipping/index"
         },
         {
+          title: "装箱",
+          desc: "扫码装箱（旧版）",
+          path: "/pages/packingLoc/index"
+        },
+        {
           title: "搜索",
           desc: "库存查询",
           path: "/pages/search/index"

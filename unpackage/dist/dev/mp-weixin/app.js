@@ -5,6 +5,7 @@ if (!Math) {
   "./pages/index/index.js";
   "./pages/packing/index.js";
   "./pages/shipping/index.js";
+  "./pages/packingLoc/index.js";
   "./pages/search/index.js";
 }
 const _sfc_main = {

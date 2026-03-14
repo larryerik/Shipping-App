@@ -27,7 +27,7 @@
 		<view class="bottom-actions">
 			<view class="btn primary" @click="scanBox">扫码</view>
 			<view class="btn" @click="clearAll">清空</view>
-			<view class="btn accent" @click="operateOptions">操作</view>
+			<view class="btn accent" @click="openOperatePanel">操作</view>
 		</view>
 
 		<view class="mask" v-if="detailVisible" @click="detailVisible = false"></view>
@@ -44,6 +44,31 @@
 			</view>
 			<view class="close-btn" @click="detailVisible = false">
 				关闭
+			</view>
+		</view>
+
+		<view class="mask" v-if="operationVisible" @click="closeOperatePanel"></view>
+		<view class="action-popup" v-if="operationVisible">
+			<view class="title">操作</view>
+			<view class="action-item" @click="prepareExport('export-and-out')">导出并出库</view>
+			<view class="action-item" @click="prepareExport('export')">导出</view>
+			<view class="action-item" @click="handleWarehouseTap('out')">出库</view>
+			<view class="action-item" @click="handleWarehouseTap('in')">入库</view>
+			<view class="close-btn secondary" @click="closeOperatePanel">取消</view>
+		</view>
+
+		<view class="mask" v-if="exportVisible" @click="closeExportPanel"></view>
+		<view class="export-popup" v-if="exportVisible">
+			<view class="title">导出文件名</view>
+			<input
+				v-model="exportFileName"
+				class="export-input"
+				placeholder="请输入文件名"
+				confirm-type="done"
+			/>
+			<view class="popup-actions">
+				<view class="popup-btn cancel" @click="closeExportPanel">取消</view>
+				<view class="popup-btn confirm" @click="submitExport">确定</view>
 			</view>
 		</view>
 	</view>
@@ -66,7 +91,11 @@
 			return {
 				detailVisible: false,
 				currentBox: { boxNo: '', details: [] },
-				boxes: []
+				boxes: [],
+				operationVisible: false,
+				exportVisible: false,
+				exportAction: '',
+				exportFileName: ''
 			}
 		},
 		watch: {
@@ -178,59 +207,88 @@
 				const noExt = trimmed.replace(/\.csv$/i, '')
 				return noExt.replace(/[\\/:*?"<>|]/g, '_').trim()
 			},
-			promptExportFileName() {
-				return new Promise((resolve, reject) => {
-					uni.showModal({
-						title: '导出文件名',
-						editable: true,
-						placeholderText: `默认：${this.getTodayString()}`,
-						success: res => {
-							if (!res.confirm) {
-								reject(new Error('cancel'))
+			isCancelError(error) {
+				const message = String(
+					(error && error.errMsg) ||
+					(error && error.message) ||
+					error ||
+					''
+				)
+				return /cancel/i.test(message)
+			},
+			getWeChatUserDataPath() {
+				// #ifdef MP-WEIXIN
+				if (typeof wx !== 'undefined' && wx.env && wx.env.USER_DATA_PATH) {
+					return wx.env.USER_DATA_PATH
+				}
+				// #endif
+				return ''
+			},
+			getWeChatFileSystemManager() {
+				// #ifdef MP-WEIXIN
+				if (typeof wx !== 'undefined' && typeof wx.getFileSystemManager === 'function') {
+					return wx.getFileSystemManager()
+				}
+				// #endif
+				return null
+			},
+			shareFileToWeChat(filePath, fileName, options = {}) {
+				const { afterSuccess } = options
+				// #ifdef MP-WEIXIN
+				if (typeof wx !== 'undefined' && typeof wx.shareFileMessage === 'function') {
+					wx.shareFileMessage({
+						filePath,
+						fileName,
+						success: async () => {
+							if (typeof afterSuccess === 'function') {
+								try {
+									await afterSuccess()
+								} catch (error) {
+									console.error('分享成功后的处理失败', error)
+								}
+							}
+						},
+						fail: error => {
+							console.error('微信文件分享失败', error)
+							if (this.isCancelError(error)) {
 								return
 							}
-							const inputName = this.sanitizeFileName(res.content || '')
-							resolve(inputName || this.getTodayString())
-						},
-						fail: reject
+							uni.showToast({ title: '文件分享失败', icon: 'none' })
+						}
 					})
-				})
+					return true
+				}
+				// #endif
+				return false
 			},
-			async exportCsv(baseName) {
+			createWeChatShareFile(baseName) {
+				const safeBaseName = this.sanitizeFileName(baseName || '') || this.getTodayString()
+				const fileName = `${safeBaseName}.csv`
+				const csv = '\uFEFF' + this.buildCsvContent()
+				const fileSystemManager = this.getWeChatFileSystemManager()
+				const userDataPath = this.getWeChatUserDataPath()
+				if (!fileSystemManager || !userDataPath) {
+					throw new Error('unsupported')
+				}
+				const filePath = `${userDataPath}/${fileName}`
+				fileSystemManager.writeFileSync(filePath, csv, 'utf8')
+				return { filePath, fileName }
+			},
+			exportCsv(baseName, options = {}) {
 				if (!this.boxes.length) {
 					uni.showToast({ title: '暂无可导出数据', icon: 'none' })
 					return false
 				}
 				try {
-					const finalBaseName = this.sanitizeFileName(baseName || '')
-					const safeBaseName = finalBaseName || this.getTodayString()
-					const fileName = `${safeBaseName}.csv`
-					const csv = '\uFEFF' + this.buildCsvContent()
-					if (typeof uni.getFileSystemManager === 'function' && uni.env && uni.env.USER_DATA_PATH) {
-						const filePath = `${uni.env.USER_DATA_PATH}/${fileName}`
-						await new Promise((resolve, reject) => {
-							uni.getFileSystemManager().writeFile({
-								filePath,
-								data: csv,
-								encoding: 'utf8',
-								success: resolve,
-								fail: reject
-							})
-						})
-						uni.showToast({ title: '导出成功', icon: 'success' })
-						return true
-					}
-					await new Promise((resolve, reject) => {
-						uni.setClipboardData({
-							data: csv,
-							success: resolve,
-							fail: reject
-						})
-					})
-					uni.showToast({ title: '已复制CSV到剪贴板', icon: 'none' })
-					return true
+					// #ifdef MP-WEIXIN
+					const { filePath, fileName } = this.createWeChatShareFile(baseName)
+					return this.shareFileToWeChat(filePath, fileName, options)
+					// #endif
+					uni.showToast({ title: '仅支持微信小程序导出分享', icon: 'none' })
+					return false
 				} catch (error) {
-					if (String(error && error.message) === 'cancel') {
+					console.error('导出文件失败', error)
+					if (this.isCancelError(error)) {
 						return false
 					}
 					uni.showToast({ title: '导出失败', icon: 'none' })
@@ -354,39 +412,37 @@
 				this.currentBox = item
 				this.detailVisible = true
 			},
-			operateOptions() {
-				uni.showActionSheet({
-					itemList: ['导出并出库', '导出', '出库', '入库'],
-					success: async res => {
-						if (res.tapIndex === 0) {
-							let fileName = ''
-							try {
-								fileName = await this.promptExportFileName()
-							} catch (error) {
-								return
-							}
-							await this.changeWarehouseState('out')
-							await this.exportCsv(fileName)
-							return
-						}
-						if (res.tapIndex === 1) {
-							try {
-								const fileName = await this.promptExportFileName()
-								await this.exportCsv(fileName)
-							} catch (error) {
-								return
-							}
-							return
-						}
-						if (res.tapIndex === 2) {
-							await this.changeWarehouseState('out')
-							return
-						}
-						if (res.tapIndex === 3) {
-							await this.changeWarehouseState('in')
-						}
-					}
-				})
+			openOperatePanel() {
+				this.operationVisible = true
+			},
+			closeOperatePanel() {
+				this.operationVisible = false
+			},
+			prepareExport(action) {
+				this.exportAction = action
+				this.exportFileName = this.getTodayString()
+				this.operationVisible = false
+				this.exportVisible = true
+			},
+			closeExportPanel() {
+				this.exportVisible = false
+				this.exportAction = ''
+			},
+			submitExport() {
+				const fileName = this.sanitizeFileName(this.exportFileName) || this.getTodayString()
+				const action = this.exportAction
+				this.closeExportPanel()
+				if (action === 'export-and-out') {
+					this.exportCsv(fileName, {
+						afterSuccess: () => this.changeWarehouseState('out')
+					})
+					return
+				}
+				this.exportCsv(fileName)
+			},
+			async handleWarehouseTap(action) {
+				this.closeOperatePanel()
+				await this.changeWarehouseState(action)
 			}
 		}
 	}
@@ -520,6 +576,22 @@
 		box-sizing: border-box;
 	}
 
+	.action-popup,
+	.export-popup {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 580rpx;
+		background: #fff;
+		border-radius: 18rpx;
+		padding: 24rpx;
+		z-index: 30;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+	}
+
 	.title {
 		font-size: 30rpx;
 		font-weight: 700;
@@ -564,5 +636,56 @@
 		color: #fff;
 		position: relative;
 		z-index: 3;
+	}
+
+	.close-btn.secondary {
+		background: #edf1f9;
+		color: #33415f;
+	}
+
+	.action-item {
+		height: 76rpx;
+		line-height: 76rpx;
+		text-align: center;
+		border-radius: 12rpx;
+		background: #f5f7fb;
+		color: #33415f;
+		font-size: 26rpx;
+		margin-bottom: 12rpx;
+	}
+
+	.export-input {
+		height: 80rpx;
+		border-radius: 12rpx;
+		background: #f5f7fb;
+		padding: 0 20rpx;
+		font-size: 26rpx;
+		color: #33415f;
+		margin-bottom: 20rpx;
+		box-sizing: border-box;
+	}
+
+	.popup-actions {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 12rpx;
+	}
+
+	.popup-btn {
+		height: 72rpx;
+		line-height: 72rpx;
+		text-align: center;
+		border-radius: 12rpx;
+		font-size: 26rpx;
+	}
+
+	.popup-btn.cancel {
+		background: #edf1f9;
+		color: #33415f;
+	}
+
+	.popup-btn.confirm {
+		background: #2f7ce0;
+		color: #fff;
 	}
 </style>
