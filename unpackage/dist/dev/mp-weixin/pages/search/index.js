@@ -186,9 +186,6 @@ const _sfc_main = {
       this.showSuggest = true;
     },
     onKeywordBlur() {
-      setTimeout(() => {
-        this.showSuggest = false;
-      }, 150);
     },
     onSuggestReachBottom() {
       if (!this.showSkuSuggest || this.suggestLoading || !this.suggestHasMore) {

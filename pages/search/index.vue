@@ -269,9 +269,7 @@
 				this.showSuggest = true
 			},
 			onKeywordBlur() {
-				setTimeout(() => {
-					this.showSuggest = false
-				}, 150)
+				// Keep the suggestion panel open while the user scrolls or taps it.
 			},
 			onSuggestReachBottom() {
 				if (!this.showSkuSuggest || this.suggestLoading || !this.suggestHasMore) {

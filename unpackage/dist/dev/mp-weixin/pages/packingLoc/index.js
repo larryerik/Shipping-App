@@ -104,13 +104,6 @@ const _sfc_main = {
         weight: this.weight
       });
     },
-    goBack() {
-      if (getCurrentPages().length > 1) {
-        common_vendor.index.navigateBack({ delta: 1 });
-        return;
-      }
-      common_vendor.index.redirectTo({ url: "/pages/index/index" });
-    },
     initPrinter() {
       try {
         this.lpapi = uni_modules_dothanLpapiBle_js_sdk_index.LPAPIFactory.getInstance({
@@ -684,15 +677,14 @@ if (!Math) {
 }
 function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
   return common_vendor.e({
-    a: common_vendor.o((...args) => $options.goBack && $options.goBack(...args)),
-    b: common_vendor.t($data.connectedDevice ? `已连接：${$data.connectedDevice}` : "蓝牙未连接"),
-    c: $data.connectedDevice ? 1 : "",
-    d: common_vendor.o((...args) => $options.openPrinterDrawer && $options.openPrinterDrawer(...args)),
-    e: common_vendor.t($options.skuCount),
-    f: common_vendor.t($options.skuSortLabel),
-    g: common_vendor.o((...args) => $options.toggleSkuSort && $options.toggleSkuSort(...args)),
-    h: common_vendor.t($options.totalQty),
-    i: common_vendor.f($data.skuList, (item, index, i0) => {
+    a: common_vendor.t($data.connectedDevice ? `已连接：${$data.connectedDevice}` : "蓝牙未连接"),
+    b: $data.connectedDevice ? 1 : "",
+    c: common_vendor.o((...args) => $options.openPrinterDrawer && $options.openPrinterDrawer(...args)),
+    d: common_vendor.t($options.skuCount),
+    e: common_vendor.t($options.skuSortLabel),
+    f: common_vendor.o((...args) => $options.toggleSkuSort && $options.toggleSkuSort(...args)),
+    g: common_vendor.t($options.totalQty),
+    h: common_vendor.f($data.skuList, (item, index, i0) => {
       return {
         a: common_vendor.t(item.sku),
         b: common_vendor.t(item.fnsku),
@@ -702,29 +694,29 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         f: common_vendor.o(($event) => $options.openQtyPopup(item), `${item.fnsku}-${index}`),
         g: `${item.fnsku}-${index}`,
         h: common_vendor.o(($event) => $options.onSwipeClick($event, item.fnsku), `${item.fnsku}-${index}`),
-        i: "66850a9d-1-" + i0 + ",66850a9d-0"
+        i: "c1e98a70-1-" + i0 + ",c1e98a70-0"
       };
     }),
-    j: common_vendor.p({
+    i: common_vendor.p({
       ["right-options"]: $data.deleteOptions
     }),
-    k: $data.scrollIntoViewId,
-    l: $data.weight,
-    m: common_vendor.o(($event) => $data.weight = $event.detail.value),
-    n: common_vendor.o((...args) => $options.scanGoods && $options.scanGoods(...args)),
-    o: common_vendor.o((...args) => $options.clearAll && $options.clearAll(...args)),
-    p: common_vendor.o((...args) => $options.printOptions && $options.printOptions(...args)),
-    q: $data.drawerVisible
+    j: $data.scrollIntoViewId,
+    k: $data.weight,
+    l: common_vendor.o(($event) => $data.weight = $event.detail.value),
+    m: common_vendor.o((...args) => $options.scanGoods && $options.scanGoods(...args)),
+    n: common_vendor.o((...args) => $options.clearAll && $options.clearAll(...args)),
+    o: common_vendor.o((...args) => $options.printOptions && $options.printOptions(...args)),
+    p: $data.drawerVisible
   }, $data.drawerVisible ? {
-    r: common_vendor.o(($event) => $data.drawerVisible = false)
+    q: common_vendor.o(($event) => $data.drawerVisible = false)
   } : {}, {
-    s: common_vendor.t($data.isScanning ? "扫描中" : "刷新"),
-    t: common_vendor.o((...args) => $options.refreshPrinters && $options.refreshPrinters(...args)),
-    v: !$data.btDevices.length
+    r: common_vendor.t($data.isScanning ? "扫描中" : "刷新"),
+    s: common_vendor.o((...args) => $options.refreshPrinters && $options.refreshPrinters(...args)),
+    t: !$data.btDevices.length
   }, !$data.btDevices.length ? {
-    w: common_vendor.t($data.isScanning ? "正在搜索打印机..." : "未发现可用打印机")
+    v: common_vendor.t($data.isScanning ? "正在搜索打印机..." : "未发现可用打印机")
   } : {}, {
-    x: common_vendor.f($data.btDevices, (item, k0, i0) => {
+    w: common_vendor.f($data.btDevices, (item, k0, i0) => {
       return {
         a: common_vendor.t(item.name),
         b: common_vendor.t(item.rssiText),
@@ -733,25 +725,25 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
         e: common_vendor.o(($event) => $options.connectDevice(item), item.deviceId)
       };
     }),
-    y: $data.drawerVisible ? 1 : "",
-    z: $data.qtyPopupVisible
+    x: $data.drawerVisible ? 1 : "",
+    y: $data.qtyPopupVisible
   }, $data.qtyPopupVisible ? {
-    A: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args))
+    z: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args))
   } : {}, {
-    B: $data.qtyPopupVisible
+    A: $data.qtyPopupVisible
   }, $data.qtyPopupVisible ? {
-    C: common_vendor.t($data.qtyPopupMode === "scanAdd" ? `输入数量：${$data.editingTitle}` : `修改 ${$data.editingTitle}`),
-    D: `${$data.editingOldQty}`,
-    E: $data.qtyInputFocus,
-    F: common_vendor.o(($event) => $data.qtyInputFocus = false),
-    G: $data.editingQty,
-    H: common_vendor.o(($event) => $data.editingQty = $event.detail.value),
-    I: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args)),
-    J: common_vendor.o((...args) => $options.confirmQty && $options.confirmQty(...args))
+    B: common_vendor.t($data.qtyPopupMode === "scanAdd" ? `输入数量：${$data.editingTitle}` : `修改 ${$data.editingTitle}`),
+    C: `${$data.editingOldQty}`,
+    D: $data.qtyInputFocus,
+    E: common_vendor.o(($event) => $data.qtyInputFocus = false),
+    F: $data.editingQty,
+    G: common_vendor.o(($event) => $data.editingQty = $event.detail.value),
+    H: common_vendor.o((...args) => $options.closeQtyPopup && $options.closeQtyPopup(...args)),
+    I: common_vendor.o((...args) => $options.confirmQty && $options.confirmQty(...args))
   } : {}, {
-    K: $data.printBusy
+    J: $data.printBusy
   }, $data.printBusy ? {
-    L: common_vendor.t($data.printBusyText || "处理中...")
+    K: common_vendor.t($data.printBusyText || "处理中...")
   } : {});
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);

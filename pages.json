@@ -9,7 +9,7 @@
 		{
 			"path": "pages/packing/index",
 			"style": {
-				"navigationStyle": "custom"
+				"navigationBarTitleText": "装箱"
 			}
 			
 		},
@@ -22,7 +22,7 @@
 		{
 			"path": "pages/packingLoc/index",
 			"style": {
-				"navigationStyle": "custom"
+				"navigationBarTitleText": "装箱（旧版）"
 			}
 		},
 		{

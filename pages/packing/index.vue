@@ -1,13 +1,10 @@
 <template>
 	<view class="page">
-		<view class="top-bar">
-			<view class="back-btn" @click="goBack">
-				<text class="back-arrow">‹</text>
-			</view>
+		<view class="device-bar">
 			<view class="bt-status" :class="{ connected: connectedDevice }">
 				{{ connectedDevice ? `已连接：${connectedDevice}` : '蓝牙未连接' }}
 			</view>
-			<view class="connect-btn" @click="openPrinterDrawer">连接</view>
+			<view class="connect-btn" @click="openPrinterDrawer">连接打印机</view>
 		</view>
 
 		<view class="summary">
@@ -201,13 +198,6 @@
 					boxId: this.boxId,
 					weight: this.weight
 				})
-			},
-			goBack() {
-				if (getCurrentPages().length > 1) {
-					uni.navigateBack({ delta: 1 })
-					return
-				}
-				uni.redirectTo({ url: '/pages/index/index' })
 			},
 			initPrinter() {
 				try {
@@ -815,7 +805,6 @@
 	.page {
 		height: 100vh;
 		padding: 24rpx;
-		padding-top: calc(var(--status-bar-height) + 12rpx);
 		padding-bottom: 24rpx;
 		background: #f3f6fb;
 		display: flex;
@@ -823,41 +812,16 @@
 		box-sizing: border-box;
 	}
 
-	.top-bar {
+	.device-bar {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		gap: 16rpx;
 		margin-bottom: 16rpx;
 		flex-shrink: 0;
 	}
 
-	.back-btn,
-	.connect-btn {
-		width: 120rpx;
-		text-align: center;
-	}
-
-	.back-btn {
-		display: flex;
-		align-items: center;
-		justify-content: flex-start;
-		color: #1f2d4d;
-		font-size: 30rpx;
-		padding-left: 6rpx;
-		height: 64rpx;
-		line-height: 64rpx;
-	}
-
-	.back-arrow {
-		font-size: 50rpx;
-		line-height: 1;
-		margin-right: 2rpx;
-		font-weight: 400;
-	}
-
 	.bt-status {
 		flex: 1;
-		margin: 0 16rpx;
 		text-align: center;
 		background: #e8eef8;
 		color: #50607a;
@@ -874,9 +838,10 @@
 	.connect-btn {
 		background: #2f7ce0;
 		color: #fff;
-		padding: 12rpx 0;
+		padding: 12rpx 22rpx;
 		border-radius: 12rpx;
 		font-size: 24rpx;
+		white-space: nowrap;
 	}
 
 	.summary {
