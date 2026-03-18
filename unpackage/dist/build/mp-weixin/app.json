@@ -1,0 +1,17 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/packing/index",
+    "pages/shipping/index",
+    "pages/packingLoc/index",
+    "pages/search/index"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "发货管理",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8",
+    "disableScroll": true
+  },
+  "usingComponents": {}
+}

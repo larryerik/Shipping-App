@@ -472,6 +472,7 @@
 						uni.showToast({ title: '未查询到产品', icon: 'none' })
 						return
 					}
+					this.weight=content.split("|")[1]
 					const normalized = list.map(this.normalizeSkuItem).filter(item => item.fnsku)
 					let lastAffectedIndex = -1
 					normalized.forEach(incoming => {
@@ -666,6 +667,7 @@
 					y: 1,
 					width: 35,
 					height: 10,
+					fontHeight:10,
 					autoReturn: false,
 					fontStyle: 1
 				})
@@ -676,6 +678,7 @@
 					y: 1,
 					width: 10,
 					height: 10,
+					fontHeight:10,
 					autoReturn: false,
 					fontStyle: 1
 				})
@@ -689,6 +692,7 @@
 								y: currentY,
 								width: 40,
 								height: fontHeight,
+								fontHeight:fontHeight,
 								autoReturn: false,
 								fontStyle: 1
 							})
@@ -699,6 +703,7 @@
 								y: currentY,
 								width: 5,
 								height: fontHeight,
+								fontHeight:fontHeight,
 								autoReturn: false,
 								fontStyle: 1
 							})
@@ -716,6 +721,7 @@
 								y: currentY,
 								width: 40,
 								height: fontHeight,
+								fontHeight:fontHeight,
 								autoReturn: false,
 								fontStyle: 1
 							})
@@ -726,6 +732,7 @@
 								y: currentY,
 								width: 5,
 								height: fontHeight,
+								fontHeight:fontHeight,
 								autoReturn: false,
 								fontStyle: 1
 							})
