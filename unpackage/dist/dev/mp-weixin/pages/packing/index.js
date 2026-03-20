@@ -438,7 +438,7 @@ const _sfc_main = {
     },
     async confirmQty() {
       const qty = Number(this.editingQty);
-      if (!qty || qty <= 0) {
+      if (qty < 0) {
         common_vendor.index.showToast({ title: "数量无效", icon: "none" });
         return;
       }
@@ -504,18 +504,9 @@ const _sfc_main = {
         common_vendor.index.showToast({ title: "产品列表为空", icon: "none" });
         return;
       }
-      const skuList = this.skuList.map((item) => ({
-        fnsku: String(item.fnsku || "").trim(),
-        number: Number(item.number || 0)
-      }));
-      const hasInvalid = skuList.some((item) => !item.fnsku || !item.number || item.number <= 0);
-      if (hasInvalid) {
-        common_vendor.index.showToast({ title: "存在无效SKU数量", icon: "none" });
-        return;
-      }
       try {
         const cloudApi = this.getCloudAPI();
-        const res = await cloudApi.updateBox(boxid, skuList, weight);
+        const res = await cloudApi.updateBox(boxid, this.skuList, weight);
         if (res === 1) {
           common_vendor.index.showToast({ title: "更新成功", icon: "success" });
           return;

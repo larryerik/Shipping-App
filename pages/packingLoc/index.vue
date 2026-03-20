@@ -492,7 +492,7 @@
 			},
 			async confirmQty() {
 				const qty = Number(this.editingQty)
-				if (!qty || qty <= 0) {
+				if (qty < 0) {
 					uni.showToast({ title: '数量无效', icon: 'none' })
 					return
 				}

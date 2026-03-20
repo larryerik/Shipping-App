@@ -412,7 +412,7 @@ const _sfc_main = {
     },
     async confirmQty() {
       const qty = Number(this.editingQty);
-      if (!qty || qty <= 0) {
+      if (qty < 0) {
         common_vendor.index.showToast({ title: "数量无效", icon: "none" });
         return;
       }
